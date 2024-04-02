@@ -11,11 +11,11 @@
 struct MotorControl {
   struct pins {
     String name;
-    int inputPin;
-    int outputPin;
-    int enablePin;
+    int forwardPin;
+    int powerPin;
+    int backwardPin;
   };
-  MotorControl(String name, int inputPin, int outputPin, int enablePin);
+  MotorControl(String name, int forwardPin, int powerPin, int backwardPin);
   struct pins pins;
 };
 // Include Particle Device OS APIs
@@ -26,34 +26,39 @@ SYSTEM_MODE(AUTOMATIC);
 
 // Run the application and system concurrently in separate threads
 SYSTEM_THREAD(ENABLED);
-static int controlType = 0;
 const int switchPin = D6;
 // Show system, cloud connectivity, and application logs over USB
 // View logs with CLI using 'particle serial monitor --follow'
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
 int setDriveControl(String inputString);
+int driveValue[2]; //(x,y) values for the drive train
 MotorControl Motors[2] = {
-  MotorControl("Front", D0, D1, D2),
-  MotorControl("Back", D3, D4, D5)
+  MotorControl("Left", D0, D1, D2),
+  MotorControl("Right", D3, D4, D5)
 };
-MotorControl::MotorControl(String name,int inputPin, int outputPin, int enablePin){
+ MotorControl::MotorControl(String name, int forwardPin, int powerPin, int backwardPin){
     pins.name = name;
-    pins.inputPin = inputPin;
-    pins.outputPin = outputPin;
-    pins.enablePin = enablePin;
+    pins.forwardPin = forwardPin;
+    pins.powerPin = powerPin;
+    pins.backwardPin = backwardPin;
   }
 // setup() runs once, when the device is first turned on
+void setDriveControl(const char *event, const char *data){
+  String inputString = String(data);
+  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt();
+  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt();
+  driveValue[0] = xValue;
+  driveValue[1] = yValue;
+}
 void setup() {
   // Put initialization like pinMode and begin functions here
   for(int i = 0; i < 2; i++){
-    pinMode(Motors[i].pins.inputPin, INPUT);
-    pinMode(Motors[i].pins.outputPin, OUTPUT);
-    pinMode(Motors[i].pins.enablePin, OUTPUT);
+    pinMode(Motors[i].pins.forwardPin, OUTPUT);
+    pinMode(Motors[i].pins.powerPin, OUTPUT);
+    pinMode(Motors[i].pins.backwardPin, OUTPUT);
   }
   pinMode(switchPin, INPUT);
-  digitalWrite(Motors[0].pins.enablePin, HIGH);
-  digitalWrite(Motors[1].pins.enablePin, HIGH);
-  Particle.function("cF_setDriveControl", setDriveControl);
+  Particle.subscribe("ControlValues(x,y)", setDriveControl,"2f0028001547313137363331");
 }
 
 void onlineControl(){
@@ -64,6 +69,6 @@ void onlineControl(){
 void loop() {
   onlineControl();
 }
-int setDriveControl(String inputString){
+// int setDriveControl(String inputString){
   
-}
+// }
