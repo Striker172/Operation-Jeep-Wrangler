@@ -8,14 +8,15 @@
 
 // Include Particle Device OS APIs
 #include "Particle.h"
-const int xValPin = A0;
-const int yValPin = A1;
+#define xValPin A0
+#define yValPin A1
  int xValRaw = 0;
  int controlX = 2047;
  int controlY = 2047;
  int yValRaw = 0;
- static unsigned long int Timer;
-
+#define hornSwitchPin D0
+unsigned long int samplePositionTimer;
+unsigned long int sampleHornSwitch;
 // Let Device OS manage the connection to the Particle Cloud
 SYSTEM_MODE(AUTOMATIC);
 
@@ -30,8 +31,10 @@ void sendDatatoCloud(int controlX, int controlY);
 void setup() {
  pinMode(xValPin, INPUT);
  pinMode(yValPin, INPUT);
+ pinMode(hornSwitchPin, INPUT_PULLDOWN);
  Serial.begin(9600);
- Timer = millis()+2000;
+ samplePositionTimer = millis()+500;
+ sampleHornSwitch = millis()+1000;
 }
 // void sendDatatoCloud(int controlX, int controlY){
 //     Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
@@ -40,13 +43,23 @@ void setup() {
 // loop() runs over and over again, as quickly as it can execute.
 void loop() {
     unsigned long int currentTime = millis();
-    if(currentTime > Timer){
+    unsigned long int currentTimeMicro = millis();
+    if(currentTimeMicro > samplePositionTimer){
     xValRaw = (analogRead(xValPin)-2047);
     yValRaw = (analogRead(yValPin)-2047);
     controlX = map(xValRaw, -2047, 2047, -255, 255);
     controlY = map(yValRaw, -2047, 2047, -255, 255);
     // Serial.printlnf("X: %d, Y: %d, controlX: %d, controlY: %d", xValRaw, yValRaw, controlX, controlY);
     Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
-    Timer += 500;
+    samplePositionTimer += 500;
+    }
+    if(currentTime > sampleHornSwitch){
+        if(digitalRead(hornSwitchPin) == HIGH){
+            Particle.publish("HornSwitch: ", "ON");
+        }
+        else{
+            Particle.publish("HornSwitch: ", "OFF");
+        }
+        sampleHornSwitch += 1000;
     }
 }

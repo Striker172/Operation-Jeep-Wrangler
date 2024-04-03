@@ -7,16 +7,26 @@
  */
 #include "Particle.h"
 #include "string.h"
+#define forwardPin D4
+#define backwardPin D3
+#define speakerPin D2
 //#include "ezButton.h" This is just a library that simplifies the use of buttons and handles debouncing for you and such. We can add it if need be
-struct MotorControl {
+class MotorControl {
+  public:
   struct pins {
     String name;
-    int forwardPin;
     int powerPin;
-    int backwardPin;
   };
-  MotorControl(String name, int forwardPin, int powerPin, int backwardPin);
+  MotorControl(String name, int powerPin) {
+    pins.name = name;
+    pins.powerPin = powerPin;
+  }
   struct pins pins;
+  void setSpeed(int speed){
+    this->speed = speed;
+  }
+  private:
+  int speed = 0;
 };
 // Include Particle Device OS APIs
 
@@ -26,39 +36,46 @@ SYSTEM_MODE(AUTOMATIC);
 
 // Run the application and system concurrently in separate threads
 SYSTEM_THREAD(ENABLED);
-const int switchPin = D6;
 // Show system, cloud connectivity, and application logs over USB
 // View logs with CLI using 'particle serial monitor --follow'
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
 int setDriveControl(String inputString);
-int driveValue[2]; //(x,y) values for the drive train
+int driveValue[2]; //(x,y) values for the drive train can be removed later, idk depends on how we want to do it
+int driveControl = 0; //0 for remote control, 1 for website control
+int* driveControlPtr = &driveControl; // a pointer to the driveControl variable, where it can switch between remote and website control
 MotorControl Motors[2] = {
-  MotorControl("Left", D0, D1, D2),
-  MotorControl("Right", D3, D4, D5)
+  MotorControl("Left", D0),
+  MotorControl("Right", D1)
 };
- MotorControl::MotorControl(String name, int forwardPin, int powerPin, int backwardPin){
-    pins.name = name;
-    pins.forwardPin = forwardPin;
-    pins.powerPin = powerPin;
-    pins.backwardPin = backwardPin;
-  }
 // setup() runs once, when the device is first turned on
-void setDriveControl(const char *event, const char *data){
+
+void setDriveControlXY(const char *event, const char *data){
   String inputString = String(data);
-  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt();
-  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt();
+  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
+  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
   driveValue[0] = xValue;
   driveValue[1] = yValue;
+}
+void HornSwitch(const char *event, const char *data){
+  if(strcmp(data,"ON") == 0){
+    tone(speakerPin, 500,500);
+  }
+  else if(strcmp(data,"OFF") == 0){
+    noTone(speakerPin);
+  }
 }
 void setup() {
   // Put initialization like pinMode and begin functions here
   for(int i = 0; i < 2; i++){
-    pinMode(Motors[i].pins.forwardPin, OUTPUT);
     pinMode(Motors[i].pins.powerPin, OUTPUT);
-    pinMode(Motors[i].pins.backwardPin, OUTPUT);
   }
-  pinMode(switchPin, INPUT);
-  Particle.subscribe("ControlValues(x,y)", setDriveControl,"2f0028001547313137363331");
+  pinMode(forwardPin, OUTPUT);
+  pinMode(backwardPin, OUTPUT);
+  pinMode(speakerPin, OUTPUT);
+  Particle.subscribe("ControlValues(x,y)", setDriveControlXY,"2f0028001547313137363331");
+  Particle.subscribe("HornSwitch",HornSwitch,"2f0028001547313137363331");
+  //configure for website control as well.
+  Particle.function("setDriveControl", setDriveControl);
 }
 
 void onlineControl(){
@@ -67,8 +84,35 @@ void onlineControl(){
   //if the input is low, set the output pin low
 }
 void loop() {
-  onlineControl();
+  // onlineControl();
+  if(driveControl == 0){
+    //remote control
+    //read the input from the remote and set the output pins accordingly
+    //if the input is high, set the output pin high
+    //if the input is low, set the output pin low
+  }
+  else if(driveControl == 1){
+    //website control
+    //read the input from the cloud and set the output pins accordingly
+    //if the input is high, set the output pin high
+    //if the input is low, set the output pin low
+  }
 }
-// int setDriveControl(String inputString){
-  
-// }
+void beep(int frequency){
+  tone(speakerPin, frequency,500);
+}
+int setDriveControl(String inputString){
+  if(inputString.compareTo("remote") == 0){
+    *driveControlPtr = 0;
+    beep(1000);
+    Particle.publish("DriveControl","Remote");
+    return 0;
+  }
+  else if(inputString.compareTo("website") == 0){
+    *driveControlPtr = 1;
+    Particle.publish("DriveControl","Website");
+    beep(2500);
+    return 1;
+  }
+  return -1;
+}
