@@ -8,8 +8,10 @@
 
 // Include Particle Device OS APIs
 #include "Particle.h"
-#define xValPin A0
-#define yValPin A1
+#define xValPin A1
+#define yValPin A0
+int centerX = 0;
+int centerY = 0;
  int xValRaw = 0;
  int controlX = 2047;
  int controlY = 2047;
@@ -26,7 +28,7 @@ SYSTEM_THREAD(ENABLED);
 // Show system, cloud connectivity, and application logs over USB
 // View logs with CLI using 'particle serial monitor --follow'
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
-void sendDatatoCloud(int controlX, int controlY);
+// void sendDatatoCloud(int controlX, int controlY); //This method probably doesn't matter
 // setup() runs once, when the device is first turned on
 void setup() {
  pinMode(xValPin, INPUT);
@@ -35,6 +37,13 @@ void setup() {
  Serial.begin(9600);
  samplePositionTimer = millis()+500;
  sampleHornSwitch = millis()+1000;
+ //Gets the center of the joystick
+ for(int i = 0; i < 50; i++){
+     centerX += analogRead(xValPin);
+     centerY += analogRead(yValPin);
+ }
+    centerX = centerX/50;
+    centerY = centerY/50;
 }
 // void sendDatatoCloud(int controlX, int controlY){
 //     Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
@@ -44,17 +53,19 @@ void setup() {
 void loop() {
     unsigned long int currentTime = millis();
     unsigned long int currentTimeMicro = millis();
-    if(currentTimeMicro > samplePositionTimer){
-    xValRaw = (analogRead(xValPin)-2047);
-    yValRaw = (analogRead(yValPin)-2047);
-    controlX = map(xValRaw, -2047, 2047, -255, 255);
-    controlY = map(yValRaw, -2047, 2047, -255, 255);
+    if(currentTimeMicro > samplePositionTimer){ 
+        //Splits the joystick into 4 quadrants, and maps the values to -255 to 255
+    xValRaw = (analogRead(xValPin)-centerX);
+    yValRaw = (analogRead(yValPin)-centerY);
+    controlX = map(xValRaw, -centerX, centerX, -255, 255);
+    controlY = map(yValRaw, -centerY, centerY, -255, 255);
     // Serial.printlnf("X: %d, Y: %d, controlX: %d, controlY: %d", xValRaw, yValRaw, controlX, controlY);
     Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
     samplePositionTimer += 500;
     }
     if(currentTime > sampleHornSwitch){
         if(digitalRead(hornSwitchPin) == HIGH){
+            // Serial.println("HornSwitch: ON");
             Particle.publish("HornSwitch: ", "ON");
         }
         else{
