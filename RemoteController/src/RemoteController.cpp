@@ -8,6 +8,7 @@
 
 // Include Particle Device OS APIs
 #include "Particle.h"
+#include "Music_Speaker.h"
 #define xValPin A1
 #define yValPin A0
 int centerX = 0;
