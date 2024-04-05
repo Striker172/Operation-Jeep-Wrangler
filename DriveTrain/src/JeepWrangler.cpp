@@ -7,6 +7,8 @@
  */
 #include "Particle.h"
 #include "string.h"
+#include "Music_Speaker.h"
+#define SpeakerPin A0  
 #define forwardPin D4
 #define backwardPin D3
 #define speakerPin D2
@@ -43,6 +45,8 @@ int setDriveControl(String inputString);
 int driveValue[2]; //(x,y) values for the drive train can be removed later, idk depends on how we want to do it
 int driveControl = 0; //0 for remote control, 1 for website control
 int* driveControlPtr = &driveControl; // a pointer to the driveControl variable, where it can switch between remote and website control
+int selectedSong = 0; bool previvousState = speaker.tuneIsOn;
+Music_Speaker speaker(speakerPin);
 MotorControl Motors[2] = {
   MotorControl("Left", D0),
   MotorControl("Right", D1)
@@ -57,11 +61,18 @@ void setDriveControlXY(const char *event, const char *data){
   driveValue[1] = yValue;
 }
 void HornSwitch(const char *event, const char *data){
-  if(strcmp(data,"ON") == 0){
+  String inputString = String(data);
+  if(inputString.indexOf("ON") > -1){
     tone(speakerPin, 500,500);
   }
-  else if(strcmp(data,"OFF") == 0){
+  else if(inputString.indexOf("OFF") > -1){
     noTone(speakerPin);
+  } else if(inputString.indexOf("TUNE:") > -1){
+    //Untested Code
+    inputString = inputString.substring(inputString.indexOf("TUNE:")+1);
+    selectedSong = inputString.toInt();
+    Particle.publish("Song(O/F)",String(true)); //This event should lock out input from the buttons for the horn.
+    speaker.tuneIsOn = !speaker.tuneIsOn;
   }
 }
 void setup() {
@@ -83,6 +94,7 @@ void onlineControl(){
   //if the input is high, set the output pin high
   //if the input is low, set the output pin low
 }
+
 void loop() {
   // onlineControl();
   if(driveControl == 0){
@@ -96,6 +108,16 @@ void loop() {
     //read the input from the cloud and set the output pins accordingly
     //if the input is high, set the output pin high
     //if the input is low, set the output pin low
+  }
+   //Untested Code
+  if(speaker.tuneIsOn){
+
+    speaker.playSong(selectedSong); 
+    previvousState = speaker.tuneIsOn;
+  } else if(previvousState == true && speaker.tuneIsOn == false){
+    //Untested Code
+    noTone(speakerPin);
+    Particle.publish("Song(O/F)",String(false));
   }
 }
 void beep(int frequency){

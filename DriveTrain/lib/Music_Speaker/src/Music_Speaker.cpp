@@ -37,7 +37,7 @@ Music_Speaker::Music_Speaker(int speakerPin)
         this->songIndex[i] = songIndex[i];
     }
     thisNote = 0;
-     tuneIsOn = true;
+     tuneIsOn = false;
     noteIsOn = false;
 }
 
