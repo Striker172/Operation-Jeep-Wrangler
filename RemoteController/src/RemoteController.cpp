@@ -8,7 +8,6 @@
 
 // Include Particle Device OS APIs
 #include "Particle.h"
-#include "Music_Speaker.h"
 #define xValPin A1
 #define yValPin A0
 int centerX = 0;
@@ -18,8 +17,17 @@ int centerY = 0;
  int controlY = 2047;
  int yValRaw = 0;
 #define hornSwitchPin D0
+#define hornSelectorPin1 D1
+#define hornSelectorPin2 D2
+#define hornSelectorPin3 D3
 unsigned long int samplePositionTimer;
 unsigned long int sampleHornSwitch;
+struct HornSwitch
+{
+    int indentify;
+    int value;
+};
+
 // Let Device OS manage the connection to the Particle Cloud
 SYSTEM_MODE(AUTOMATIC);
 
@@ -31,13 +39,28 @@ SYSTEM_THREAD(ENABLED);
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
 // void sendDatatoCloud(int controlX, int controlY); //This method probably doesn't matter
 // setup() runs once, when the device is first turned on
+int hornSelector; HornSwitch hornSelectorPins[] = {{hornSelectorPin1,1},{hornSelectorPin2,2},{hornSelectorPin3,4}};
+bool disableHorn = false;
+void HornInput(const char *event, const char *data){
+    String Line = String(data);
+    if(Line.indexOf("true") > -1){
+        disableHorn = true;
+    }
+    else{
+        disableHorn = false;
+    }
+}
 void setup() {
  pinMode(xValPin, INPUT);
  pinMode(yValPin, INPUT);
  pinMode(hornSwitchPin, INPUT_PULLDOWN);
+ for(int i = 0; i < 3; i++){
+    pinMode(hornSelectorPins[i].indentify, INPUT_PULLDOWN);
+ }
  Serial.begin(9600);
  samplePositionTimer = millis()+500;
- sampleHornSwitch = millis()+1000;
+ sampleHornSwitch = millis()+750;
+ Particle.subscribe("Song(O/F):",HornInput,"24001f001147313134383335");
  //Gets the center of the joystick
  for(int i = 0; i < 50; i++){
      centerX += analogRead(xValPin);
@@ -65,13 +88,40 @@ void loop() {
     samplePositionTimer += 500;
     }
     if(currentTime > sampleHornSwitch){
-        if(digitalRead(hornSwitchPin) == HIGH){
-            // Serial.println("HornSwitch: ON");
-            Particle.publish("HornSwitch: ", "ON");
+        hornSelector = 0;
+        if(digitalRead(hornSwitchPin) == HIGH && disableHorn == false){
+            for(int i =0; i < 3;i++){
+                 if(digitalRead(hornSelectorPins[i].indentify) == HIGH){
+                    hornSelector += hornSelectorPins[i].value;
+                 }
+            }
+            switch(hornSelector){
+                case 0:
+                    Particle.publish("HornSwitch:", "ON");
+                    break;
+                case 1:
+                    Particle.publish("HornSwitch:", "TUNE:10"); //RICK ROLL
+                    break;
+                case 2:
+                    Particle.publish("HornSwitch:", "TUNE:0");// Super Mario Short
+                    break;
+                case 3:
+                    Particle.publish("HornSwitch:", "TUNE:1"); //Darth Vader Short
+                    break;
+                case 4:
+                    Particle.publish("HornSwitch:", "TUNE:2"); //Pink Panther Short
+                    break;
+                case 5:
+                    Particle.publish("HornSwitch:", "TUNE:3"); //Pink Pather Long
+                    break;
+                case 6:
+                    Particle.publish("HornSwitch:", "TUNE:4");//Super Mario Long
+                    break;
+                case 7:
+                    Particle.publish("HornSwitch:", "TUNE:8");//Lion Sleeps Tonight
+                    break;
+            }
         }
-        else{
-            Particle.publish("HornSwitch: ", "OFF");
-        }
-        sampleHornSwitch += 1000;
+        sampleHornSwitch += 750;
     }
 }

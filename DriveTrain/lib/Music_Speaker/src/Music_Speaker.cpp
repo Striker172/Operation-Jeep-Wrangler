@@ -21,17 +21,17 @@ Music_Speaker::Music_Speaker(int speakerPin)
     this->speakerPin = speakerPin;
     pinMode(speakerPin, OUTPUT);
     SongInfo songIndex[] = {
-        {1, sizeof(superMarioShort) / sizeof(superMarioShort[0]) / 2, 190, (60000 * 4) / 190,superMarioShort},
-        {2, sizeof(darthVaderShort) / sizeof(darthVaderShort[0]) / 2, 170, (60000 * 4) / 170,darthVaderShort},
-        {3, sizeof(pinkPantherShort) / sizeof(pinkPantherShort[0]) / 2, 170, (60000 * 4) / 170,pinkPantherShort},
-        {4, sizeof(pinkPantherFull) / sizeof(pinkPantherFull[0]) / 2, 190, (60000 * 4) / 190,pinkPantherFull},
-        {5, sizeof(superMarioFull) / sizeof(superMarioFull[0]) / 2, 190, (60000 * 4) / 190,superMarioFull},
-        {6, sizeof(darthVaderFull) / sizeof(darthVaderFull[0]) / 2, 170, (60000 * 4) / 170,darthVaderFull},
-        {7, sizeof(happybirthday) / sizeof(happybirthday[0]) / 2, 140, (60000 * 4) / 140,happybirthday},
-        {8, sizeof(odetojoy) / sizeof(odetojoy[0]) / 2, 114, (60000 * 4) / 114,odetojoy},
-        {9, sizeof(lionsleeps) / sizeof(lionsleeps[0]) / 2, 122, (60000 * 4) / 122,lionsleeps},
-        {10, sizeof(brahmslullaby) / sizeof(brahmslullaby[0]) / 2, 76, (60000 * 4) / 76,brahmslullaby},
-        {11, sizeof(rickRoll) / sizeof(rickRoll[0]) / 2, 114, (60000 * 4) / 114,rickRoll}
+        {0, sizeof(superMarioShort) / sizeof(superMarioShort[0]) / 2, 190, (60000 * 4) / 190,superMarioShort},
+        {1, sizeof(darthVaderShort) / sizeof(darthVaderShort[0]) / 2, 170, (60000 * 4) / 170,darthVaderShort},
+        {2, sizeof(pinkPantherShort) / sizeof(pinkPantherShort[0]) / 2, 170, (60000 * 4) / 170,pinkPantherShort},
+        {3, sizeof(pinkPantherFull) / sizeof(pinkPantherFull[0]) / 2, 190, (60000 * 4) / 190,pinkPantherFull},
+        {4, sizeof(superMarioFull) / sizeof(superMarioFull[0]) / 2, 190, (60000 * 4) / 190,superMarioFull},
+        {5, sizeof(darthVaderFull) / sizeof(darthVaderFull[0]) / 2, 170, (60000 * 4) / 170,darthVaderFull},
+        {6, sizeof(happybirthday) / sizeof(happybirthday[0]) / 2, 140, (60000 * 4) / 140,happybirthday},
+        {7, sizeof(odetojoy) / sizeof(odetojoy[0]) / 2, 114, (60000 * 4) / 114,odetojoy},
+        {8, sizeof(lionsleeps) / sizeof(lionsleeps[0]) / 2, 122, (60000 * 4) / 122,lionsleeps},
+        {9, sizeof(brahmslullaby) / sizeof(brahmslullaby[0]) / 2, 76, (60000 * 4) / 76,brahmslullaby},
+        {10, sizeof(rickRoll) / sizeof(rickRoll[0]) / 2, 114, (60000 * 4) / 114,rickRoll}
     };
     for(int i = 0; i < 11; i++){
         this->songIndex[i] = songIndex[i];
@@ -69,6 +69,7 @@ void Music_Speaker::playSong(int song){
     }
   }else{ // tune has ended because thisNote > notes * 2
     tuneIsOn = false; 
+    thisNote = 0;
     noTone(speakerPin);
 }
 }

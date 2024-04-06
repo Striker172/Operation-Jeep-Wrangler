@@ -45,8 +45,9 @@ int setDriveControl(String inputString);
 int driveValue[2]; //(x,y) values for the drive train can be removed later, idk depends on how we want to do it
 int driveControl = 0; //0 for remote control, 1 for website control
 int* driveControlPtr = &driveControl; // a pointer to the driveControl variable, where it can switch between remote and website control
-int selectedSong = 0; bool previvousState = speaker.tuneIsOn;
+int selectedSong = 0; 
 Music_Speaker speaker(speakerPin);
+bool previvousState = speaker.tuneIsOn;
 MotorControl Motors[2] = {
   MotorControl("Left", D0),
   MotorControl("Right", D1)
@@ -69,9 +70,10 @@ void HornSwitch(const char *event, const char *data){
     noTone(speakerPin);
   } else if(inputString.indexOf("TUNE:") > -1){
     //Untested Code
-    inputString = inputString.substring(inputString.indexOf("TUNE:")+1);
+    inputString = inputString.substring(inputString.indexOf(":")+1);
     selectedSong = inputString.toInt();
-    Particle.publish("Song(O/F)",String(true)); //This event should lock out input from the buttons for the horn.
+     Serial.println("Song Selected: " + inputString);
+    Particle.publish("Song(O/F):","true"); //This event should lock out input from the buttons for the horn.
     speaker.tuneIsOn = !speaker.tuneIsOn;
   }
 }
@@ -84,7 +86,7 @@ void setup() {
   pinMode(backwardPin, OUTPUT);
   pinMode(speakerPin, OUTPUT);
   Particle.subscribe("ControlValues(x,y)", setDriveControlXY,"2f0028001547313137363331");
-  Particle.subscribe("HornSwitch",HornSwitch,"2f0028001547313137363331");
+  Particle.subscribe("HornSwitch:",HornSwitch,"2f0028001547313137363331");
   //configure for website control as well.
   Particle.function("setDriveControl", setDriveControl);
 }
@@ -111,13 +113,14 @@ void loop() {
   }
    //Untested Code
   if(speaker.tuneIsOn){
-
     speaker.playSong(selectedSong); 
-    previvousState = speaker.tuneIsOn;
+    previvousState = !speaker.tuneIsOn;
   } else if(previvousState == true && speaker.tuneIsOn == false){
     //Untested Code
     noTone(speakerPin);
-    Particle.publish("Song(O/F)",String(false));
+    Serial.println("Song is done");
+    Particle.publish("Song(O/F):","false");
+    previvousState = speaker.tuneIsOn;
   }
 }
 void beep(int frequency){
