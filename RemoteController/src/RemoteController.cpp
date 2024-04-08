@@ -1,11 +1,3 @@
-/* 
- * Project myProject
- * Author: Your Name
- * Date: 
- * For comprehensive documentation and examples, please visit:
- * https://docs.particle.io/firmware/best-practices/firmware-template/
- */
-
 // Include Particle Device OS APIs
 #include "Particle.h"
 #define xValPin A1
@@ -60,7 +52,7 @@ void DriveControl(const char *event, const char *data){
     }
     else if(Line.indexOf("Website") > -1){
         driveControl = Website;
-        Particle.unsubscribe();
+        Particle.unsubscribe(); // unsubscribes from all the events but add one to make sure it knows to switch back to remote control
         Particle.subscribe("DriveControl(R/W):",DriveControl,"24001f001147313134383335");
     }
 }
@@ -75,7 +67,7 @@ void setup() {
  samplePositionTimer = millis()+500;
  sampleHornSwitch = millis()+750;
  Particle.subscribe("Song(O/F):",HornInput,"24001f001147313134383335");
- Particle.subscribe("DriveControl(R/W):",DriveControl,"24001f001147313134383335");
+ Particle.subscribe("DriveControl(R/W):",DriveControl,"24001f001147313134383335"); //This is the event that will be used to switch between remote and website control
  //Gets the center of the joystick
  for(int i = 0; i < 50; i++){
      centerX += analogRead(xValPin);
@@ -144,6 +136,9 @@ void loop() {
         }
         Particle.publish("Song(O/F):", statement);
         sampleHornSwitch += 750;
+        //Maybe add a button that will switch between remote and website control on the actual controller.
     }
     }
+    //I will add a button that switchs from off, half lights, and full lights for the car.
+    //To change the color of the lights, that will be controlled via the website for obvisous reasons.
 }

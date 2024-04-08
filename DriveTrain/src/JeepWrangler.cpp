@@ -1,10 +1,4 @@
-/* 
- * Project myProject
- * Author: Your Name
- * Date: 
- * For comprehensive documentation and examples, please visit:
- * https://docs.particle.io/firmware/best-practices/firmware-template/
- */
+
 #include "Particle.h"
 #include "string.h"
 #include "Music_Speaker.h"
@@ -12,18 +6,19 @@
 #define forwardPin D4
 #define backwardPin D3
 #define speakerPin D2
-
-
-//#include "ezButton.h" This is just a library that simplifies the use of buttons and handles debouncing for you and such. We can add it if need be
 class MotorControl {
   public:
   struct pins {
     String name;
     int powerPin;
+    int speedCap;
   };
   MotorControl(String name, int powerPin) {
     pins.name = name;
     pins.powerPin = powerPin;
+    pins.speedCap = 50; // based on percentage so a range from 0-100%
+    //Zero being no speed, 100 being full speed, 50 being half speed
+    //Or the otherway around, depends on the person making the drive code.
   }
   struct pins pins;
   void setSpeed(int speed){
@@ -53,7 +48,7 @@ bool previvousState = speaker.tuneIsOn;
 MotorControl Motors[2] = {
   MotorControl("Left", D0),
   MotorControl("Right", D1)
-};
+}; //Use analogWrite to output the values to the pins, and use the speedCap to limit the speed of the motors
 // setup() runs once, when the device is first turned on
 
 void setDriveControlXY(const char *event, const char *data){
@@ -94,8 +89,21 @@ void setup() {
   //configure for website control as well.
   Particle.function("setDriveControl", setDriveControl);
   Particle.publish("DriveControl:","Remote");
+  Particle.function("Set_Drive_Speed",setDriveSpeed);
 }
 
+int setDriveSpeed(String inputString){
+ //This will set the cap for the speed of the motors, based on percentage
+ int input = inputString.toInt();
+  if(input > 100 || input < 0){
+    return -1;
+  }else{
+    for(int i = 0; i < 2; i++){
+      Motors[i].pins.speedCap = input;
+    }
+    return 2;
+  }
+}
 void onlineControl(){
   //read the input from the cloud and set the output pins accordingly
   //if the input is high, set the output pin high
