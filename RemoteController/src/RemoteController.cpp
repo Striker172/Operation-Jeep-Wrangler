@@ -16,10 +16,13 @@ int centerY = 0;
  int controlX = 2047;
  int controlY = 2047;
  int yValRaw = 0;
+ #define Remote 1;
+ #define Website 0;
 #define hornSwitchPin D0
 #define hornSelectorPin1 D1
 #define hornSelectorPin2 D2
 #define hornSelectorPin3 D3
+int driveControl = 0;
 unsigned long int samplePositionTimer;
 unsigned long int sampleHornSwitch;
 struct HornSwitch
@@ -42,12 +45,23 @@ SerialLogHandler logHandler(LOG_LEVEL_INFO);
 int hornSelector; HornSwitch hornSelectorPins[] = {{hornSelectorPin1,1},{hornSelectorPin2,2},{hornSelectorPin3,4}};
 bool disableHorn = false;
 void HornInput(const char *event, const char *data){
-    String Line = String(data);
-    if(Line.indexOf("true") > -1){
+    String input  = String(data);
+    if(input.indexOf("ON") > -1){
         disableHorn = true;
     }
-    else{
+    else {
         disableHorn = false;
+    }
+}
+void DriveControl(const char *event, const char *data){
+    String Line = String(data);
+    if(Line.indexOf("Remote") > -1){
+        driveControl = Remote;
+    }
+    else if(Line.indexOf("Website") > -1){
+        driveControl = Website;
+        Particle.unsubscribe();
+        Particle.subscribe("DriveControl(R/W):",DriveControl,"24001f001147313134383335");
     }
 }
 void setup() {
@@ -61,6 +75,7 @@ void setup() {
  samplePositionTimer = millis()+500;
  sampleHornSwitch = millis()+750;
  Particle.subscribe("Song(O/F):",HornInput,"24001f001147313134383335");
+ Particle.subscribe("DriveControl(R/W):",DriveControl,"24001f001147313134383335");
  //Gets the center of the joystick
  for(int i = 0; i < 50; i++){
      centerX += analogRead(xValPin);
@@ -76,8 +91,9 @@ void setup() {
 // loop() runs over and over again, as quickly as it can execute.
 void loop() {
     unsigned long int currentTime = millis();
-    unsigned long int currentTimeMicro = millis();
-    if(currentTimeMicro > samplePositionTimer){ 
+    if(driveControl == 1) {
+        //Splits the joystick into 4 quadrants, and maps the values to -255 to 255
+    if(currentTime > samplePositionTimer){ 
         //Splits the joystick into 4 quadrants, and maps the values to -255 to 255
     xValRaw = (analogRead(xValPin)-centerX);
     yValRaw = (analogRead(yValPin)-centerY);
@@ -89,6 +105,10 @@ void loop() {
     }
     if(currentTime > sampleHornSwitch){
         hornSelector = 0;
+        String statement = "";
+        if(digitalRead(hornSwitchPin)== HIGH && disableHorn == true){
+            statement = "OFF"; //This turns off the horn
+        }
         if(digitalRead(hornSwitchPin) == HIGH && disableHorn == false){
             for(int i =0; i < 3;i++){
                  if(digitalRead(hornSelectorPins[i].indentify) == HIGH){
@@ -97,31 +117,33 @@ void loop() {
             }
             switch(hornSelector){
                 case 0:
-                    Particle.publish("HornSwitch:", "ON");
+                    statement = "ON"; //Normal horn sound
                     break;
                 case 1:
-                    Particle.publish("HornSwitch:", "TUNE:10"); //RICK ROLL
+                    statement = "TUNE:11"; //RickRoll
                     break;
                 case 2:
-                    Particle.publish("HornSwitch:", "TUNE:0");// Super Mario Short
+                    statement = "TUNE:0"; //Mario short
                     break;
                 case 3:
-                    Particle.publish("HornSwitch:", "TUNE:1"); //Darth Vader Short
+                    statement = "TUNE:1"; //Star wars short
                     break;
                 case 4:
-                    Particle.publish("HornSwitch:", "TUNE:2"); //Pink Panther Short
+                    statement = "TUNE:2"; //pink panther short
                     break;
                 case 5:
-                    Particle.publish("HornSwitch:", "TUNE:3"); //Pink Pather Long
+                    statement = "TUNE:3"; // Pink Panther Long
                     break;
                 case 6:
-                    Particle.publish("HornSwitch:", "TUNE:4");//Super Mario Long
+                    statement = "TUNE:4"; //Star Wars
                     break;
                 case 7:
-                    Particle.publish("HornSwitch:", "TUNE:8");//Lion Sleeps Tonight
+                    statement = "TUNE:8"; //Lion sleeps tonight
                     break;
             }
         }
+        Particle.publish("Song(O/F):", statement);
         sampleHornSwitch += 750;
+    }
     }
 }

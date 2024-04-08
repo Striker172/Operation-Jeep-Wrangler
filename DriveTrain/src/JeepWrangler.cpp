@@ -12,6 +12,8 @@
 #define forwardPin D4
 #define backwardPin D3
 #define speakerPin D2
+
+
 //#include "ezButton.h" This is just a library that simplifies the use of buttons and handles debouncing for you and such. We can add it if need be
 class MotorControl {
   public:
@@ -45,7 +47,7 @@ int setDriveControl(String inputString);
 int driveValue[2]; //(x,y) values for the drive train can be removed later, idk depends on how we want to do it
 int driveControl = 0; //0 for remote control, 1 for website control
 int* driveControlPtr = &driveControl; // a pointer to the driveControl variable, where it can switch between remote and website control
-int selectedSong = 0; 
+int selectedSong = 0; //This is the song that is selected to play
 Music_Speaker speaker(speakerPin);
 bool previvousState = speaker.tuneIsOn;
 MotorControl Motors[2] = {
@@ -64,16 +66,18 @@ void setDriveControlXY(const char *event, const char *data){
 void HornSwitch(const char *event, const char *data){
   String inputString = String(data);
   if(inputString.indexOf("ON") > -1){
+    //I may have this vary on the position controls, idk yet
     tone(speakerPin, 500,500);
   }
   else if(inputString.indexOf("OFF") > -1){
-    noTone(speakerPin);
-  } else if(inputString.indexOf("TUNE:") > -1){
     //Untested Code
-    inputString = inputString.substring(inputString.indexOf(":")+1);
+    noTone(speakerPin);
+    speaker.tuneIsOn = false;
+    speaker.thisNote = 0;
+  } else if(inputString.indexOf("TUNE:") > -1){
+    inputString = inputString.substring(inputString.indexOf(":")+1); // This gets the number between the interrupt pin and :
     selectedSong = inputString.toInt();
-     Serial.println("Song Selected: " + inputString);
-    Particle.publish("Song(O/F):","true"); //This event should lock out input from the buttons for the horn.
+    Particle.publish("Song(O/F):","true"); //This allows for interrupts to happen
     speaker.tuneIsOn = !speaker.tuneIsOn;
   }
 }
@@ -89,6 +93,7 @@ void setup() {
   Particle.subscribe("HornSwitch:",HornSwitch,"2f0028001547313137363331");
   //configure for website control as well.
   Particle.function("setDriveControl", setDriveControl);
+  Particle.publish("DriveControl:","Remote");
 }
 
 void onlineControl(){
@@ -111,14 +116,11 @@ void loop() {
     //if the input is high, set the output pin high
     //if the input is low, set the output pin low
   }
-   //Untested Code
   if(speaker.tuneIsOn){
     speaker.playSong(selectedSong); 
     previvousState = !speaker.tuneIsOn;
   } else if(previvousState == true && speaker.tuneIsOn == false){
-    //Untested Code
     noTone(speakerPin);
-    Serial.println("Song is done");
     Particle.publish("Song(O/F):","false");
     previvousState = speaker.tuneIsOn;
   }
