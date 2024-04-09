@@ -50,7 +50,7 @@ MotorControl Motors[2] = {
   MotorControl("Right", D1)
 }; //Use analogWrite to output the values to the pins, and use the speedCap to limit the speed of the motors
 // setup() runs once, when the device is first turned on
-
+int setDriveSpeed(String inputString);
 void setDriveControlXY(const char *event, const char *data){
   String inputString = String(data);
   int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
