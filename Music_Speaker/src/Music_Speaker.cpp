@@ -69,6 +69,7 @@ void Music_Speaker::playSong(int song){
     }
   }else{ // tune has ended because thisNote > notes * 2
     tuneIsOn = false; 
+    thisNote = 0;
     noTone(speakerPin);
 }
 }
