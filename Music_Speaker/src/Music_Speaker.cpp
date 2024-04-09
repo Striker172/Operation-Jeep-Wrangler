@@ -20,6 +20,7 @@ Music_Speaker::Music_Speaker(int speakerPin)
   Serial.begin(9600);
     this->speakerPin = speakerPin;
     pinMode(speakerPin, OUTPUT);
+  //Add the song here with the exact notation 
     SongInfo songIndex[] = {
         {1, sizeof(superMarioShort) / sizeof(superMarioShort[0]) / 2, 190, (60000 * 4) / 190,superMarioShort},
         {2, sizeof(darthVaderShort) / sizeof(darthVaderShort[0]) / 2, 170, (60000 * 4) / 170,darthVaderShort},
