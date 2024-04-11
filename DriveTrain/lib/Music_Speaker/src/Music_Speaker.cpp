@@ -15,9 +15,14 @@ extern int brahmslullaby[];
 extern int rickRoll[];
 int Music_Speaker::thisNote = 0;
 int Music_Speaker::noteDuration = 0;
+/**
+ * @brief Constructs a Music_Speaker object with the specified speaker pin.
+ * 
+ * @param speakerPin The pin number to which the speaker is connected.
+ */
+//This is the constructor for the Music_Speaker object
 Music_Speaker::Music_Speaker(int speakerPin)
 {
-  Serial.begin(9600);
     this->speakerPin = speakerPin;
     pinMode(speakerPin, OUTPUT);
     SongInfo songIndex[] = {
@@ -41,7 +46,7 @@ Music_Speaker::Music_Speaker(int speakerPin)
     noteIsOn = false;
 }
 
-
+//Not my code, but I have modified it to work with my project. Original code can be found at https://github.com/robsoncouto/arduino-songs/issues/33
 void Music_Speaker::playSong(int song){
     if (thisNote < songIndex[song].notes * 2) { //  for (int thisNote = 0; thisNote < notes * 2; thisNote = thisNote + 2) {
     if (!noteIsOn) { // calculates the duration of each note

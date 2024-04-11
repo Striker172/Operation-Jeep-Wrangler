@@ -14,9 +14,14 @@ int centerY = 0;
 #define hornSelectorPin1 D1
 #define hornSelectorPin2 D2
 #define hornSelectorPin3 D3
+#define hornSelectorPin4 D4
+#define lightSwitch D5
 int driveControl = 0;
 unsigned long int samplePositionTimer;
 unsigned long int sampleHornSwitch;
+unsigned long int sampleLightTimer;
+int previvousButtonState = LOW;
+int brightness = 0;
 struct HornSwitch
 {
     int indentify;
@@ -34,7 +39,7 @@ SYSTEM_THREAD(ENABLED);
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
 // void sendDatatoCloud(int controlX, int controlY); //This method probably doesn't matter
 // setup() runs once, when the device is first turned on
-int hornSelector; HornSwitch hornSelectorPins[] = {{hornSelectorPin1,1},{hornSelectorPin2,2},{hornSelectorPin3,4}};
+int hornSelector; HornSwitch hornSelectorPins[] = {{hornSelectorPin1,1},{hornSelectorPin2,2},{hornSelectorPin3,4},{hornSelectorPin4,8}};
 bool disableHorn = false;
 void HornInput(const char *event, const char *data){
     String input  = String(data);
@@ -60,12 +65,14 @@ void setup() {
  pinMode(xValPin, INPUT);
  pinMode(yValPin, INPUT);
  pinMode(hornSwitchPin, INPUT_PULLDOWN);
- for(int i = 0; i < 3; i++){
+ pinMode(lightSwitch, INPUT_PULLDOWN);
+ for(int i = 0; i < 4; i++){
     pinMode(hornSelectorPins[i].indentify, INPUT_PULLDOWN);
  }
  Serial.begin(9600);
  samplePositionTimer = millis()+500;
  sampleHornSwitch = millis()+750;
+ sampleLightTimer = millis()+1000;
  Particle.subscribe("Song(O/F):",HornInput,"24001f001147313134383335");
  Particle.subscribe("DriveControl(R/W):",DriveControl,"24001f001147313134383335"); //This is the event that will be used to switch between remote and website control
  //Gets the center of the joystick
@@ -138,6 +145,20 @@ void loop() {
         sampleHornSwitch += 750;
         //Maybe add a button that will switch between remote and website control on the actual controller.
     }
+    if(currentTime > sampleLightTimer){
+        samplePositionTimer += 1000;
+        int buttonState = digitalRead(lightSwitch);
+        if(buttonState == HIGH && previvousButtonState == LOW){
+            brightness += 25;
+            if(brightness > 100){
+                brightness = 0;
+            }
+            previvousButtonState = HIGH;
+        }
+        else if(buttonState == LOW){
+           previvousButtonState = LOW;
+        }
+        Particle.publish("LightLevels:", String(brightness));
     }
     //I will add a button that switchs from off, half lights, and full lights for the car.
     //To change the color of the lights, that will be controlled via the website for obvisous reasons.
