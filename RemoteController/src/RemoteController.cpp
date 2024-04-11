@@ -1,25 +1,22 @@
 // Include Particle Device OS APIs
 #include "Particle.h"
-#define xValPin A1
-#define yValPin A0
+#define xValPin A0
+#define yValPin A1
+ #define Remote 0;
+ #define Website 1;
+#define hornSelectorPin1 D0
+#define hornSelectorPin2 D1
+#define hornSelectorPin3 D2
+#define ControlSwitch D3
+#define hornSwitchPin D4
+#define lightSwitch D5
 int centerX = 0;
 int centerY = 0;
  int xValRaw = 0;
  int controlX = 2047;
  int controlY = 2047;
  int yValRaw = 0;
- #define Remote 1;
- #define Website 0;
-#define hornSwitchPin D0
-#define hornSelectorPin1 D1
-#define hornSelectorPin2 D2
-#define hornSelectorPin3 D3
-#define hornSelectorPin4 D4
-#define lightSwitch D5
 int driveControl = 0;
-unsigned long int samplePositionTimer;
-unsigned long int sampleHornSwitch;
-unsigned long int sampleLightTimer;
 int previvousButtonState = LOW;
 int brightness = 0;
 struct HornSwitch
@@ -39,8 +36,12 @@ SYSTEM_THREAD(ENABLED);
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
 // void sendDatatoCloud(int controlX, int controlY); //This method probably doesn't matter
 // setup() runs once, when the device is first turned on
-int hornSelector; HornSwitch hornSelectorPins[] = {{hornSelectorPin1,1},{hornSelectorPin2,2},{hornSelectorPin3,4},{hornSelectorPin4,8}};
+int hornSelector; HornSwitch hornSelectorPins[] = {{hornSelectorPin1,1},{hornSelectorPin2,2},{hornSelectorPin3,4}};
 bool disableHorn = false;
+int count = 0;
+unsigned long int samplePositionTimer;
+unsigned long int sampleHornSwitch;
+unsigned long int sampleLightTimer;
 void HornInput(const char *event, const char *data){
     String input  = String(data);
     if(input.indexOf("ON") > -1){
@@ -66,22 +67,23 @@ void setup() {
  pinMode(yValPin, INPUT);
  pinMode(hornSwitchPin, INPUT_PULLDOWN);
  pinMode(lightSwitch, INPUT_PULLDOWN);
- for(int i = 0; i < 4; i++){
+ pinMode(ControlSwitch, INPUT_PULLDOWN);
+ for(int i = 0; i < 3; i++){
     pinMode(hornSelectorPins[i].indentify, INPUT_PULLDOWN);
  }
  Serial.begin(9600);
  samplePositionTimer = millis()+500;
- sampleHornSwitch = millis()+750;
- sampleLightTimer = millis()+1000;
+ sampleHornSwitch = millis()+500;
+ sampleLightTimer = millis()+500;
  Particle.subscribe("Song(O/F):",HornInput,"24001f001147313134383335");
  Particle.subscribe("DriveControl(R/W):",DriveControl,"24001f001147313134383335"); //This is the event that will be used to switch between remote and website control
  //Gets the center of the joystick
- for(int i = 0; i < 50; i++){
+ for(int i = 0; i < 100; i++){
      centerX += analogRead(xValPin);
      centerY += analogRead(yValPin);
  }
-    centerX = centerX/50;
-    centerY = centerY/50;
+    centerX = centerX/100;
+    centerY = centerY/100;
 }
 // void sendDatatoCloud(int controlX, int controlY){
 //     Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
@@ -90,23 +92,25 @@ void setup() {
 // loop() runs over and over again, as quickly as it can execute.
 void loop() {
     unsigned long int currentTime = millis();
-    if(driveControl == 1) {
         //Splits the joystick into 4 quadrants, and maps the values to -255 to 255
-    if(currentTime > samplePositionTimer){ 
+        // Serial.println("SamplePositionTimer: "+ String(samplePositionTimer) + " CurrentTime: "+ String(currentTime));
+        if(digitalRead(ControlSwitch) == LOW){
+    if(currentTime >samplePositionTimer){ 
         //Splits the joystick into 4 quadrants, and maps the values to -255 to 255
     xValRaw = (analogRead(xValPin)-centerX);
     yValRaw = (analogRead(yValPin)-centerY);
     controlX = map(xValRaw, -centerX, centerX, -255, 255);
     controlY = map(yValRaw, -centerY, centerY, -255, 255);
-    // Serial.printlnf("X: %d, Y: %d, controlX: %d, controlY: %d", xValRaw, yValRaw, controlX, controlY);
     Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
     samplePositionTimer += 500;
+    count++;
     }
     if(currentTime > sampleHornSwitch){
         hornSelector = 0;
         String statement = "";
         if(digitalRead(hornSwitchPin)== HIGH && disableHorn == true){
             statement = "OFF"; //This turns off the horn
+            Particle.publish("Song(O/F):", statement);
         }
         if(digitalRead(hornSwitchPin) == HIGH && disableHorn == false){
             for(int i =0; i < 3;i++){
@@ -140,26 +144,28 @@ void loop() {
                     statement = "TUNE:8"; //Lion sleeps tonight
                     break;
             }
+            Particle.publish("Song(O/F):", statement);
         }
-        Particle.publish("Song(O/F):", statement);
-        sampleHornSwitch += 750;
+        sampleHornSwitch += 500;
         //Maybe add a button that will switch between remote and website control on the actual controller.
     }
     if(currentTime > sampleLightTimer){
-        samplePositionTimer += 1000;
         int buttonState = digitalRead(lightSwitch);
         if(buttonState == HIGH && previvousButtonState == LOW){
-            brightness += 25;
             if(brightness > 100){
                 brightness = 0;
             }
+            Particle.publish("LightLevels:", String(brightness));
             previvousButtonState = HIGH;
+            brightness += 25;
         }
         else if(buttonState == LOW){
            previvousButtonState = LOW;
         }
-        Particle.publish("LightLevels:", String(brightness));
+        sampleLightTimer += 500;
+        // Particle.publish("LightLevels:", String(brightness));
     }
     //I will add a button that switchs from off, half lights, and full lights for the car.
     //To change the color of the lights, that will be controlled via the website for obvisous reasons.
+}
 }
