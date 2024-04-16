@@ -38,10 +38,10 @@ SerialLogHandler logHandler(LOG_LEVEL_INFO);
 // setup() runs once, when the device is first turned on
 int hornSelector; HornSwitch hornSelectorPins[] = {{hornSelectorPin1,1},{hornSelectorPin2,2},{hornSelectorPin3,4}};
 bool disableHorn = false;
-int count = 0;
 unsigned long int samplePositionTimer;
 unsigned long int sampleHornSwitch;
 unsigned long int sampleLightTimer;
+int previvousxyValues[2];
 void HornInput(const char *event, const char *data){
     String input  = String(data);
     if(input.indexOf("ON") > -1){
@@ -84,6 +84,8 @@ void setup() {
  }
     centerX = centerX/100;
     centerY = centerY/100;
+    previvousxyValues[0] = centerX;
+    previvousxyValues[1] = centerY;
 }
 // void sendDatatoCloud(int controlX, int controlY){
 //     Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
@@ -101,13 +103,18 @@ void loop() {
     yValRaw = (analogRead(yValPin)-centerY);
     controlX = map(xValRaw, -centerX, centerX, -255, 255);
     controlY = map(yValRaw, -centerY, centerY, -255, 255);
-    Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
+    //Untested code 
+    if(controlX != previvousxyValues[0] && controlY != previvousxyValues[1]){
+        Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
+        previvousxyValues[0] = controlX;
+        previvousxyValues[1] = controlY;
+    }
     samplePositionTimer += 500;
-    count++;
     }
     if(currentTime > sampleHornSwitch){
         hornSelector = 0;
         String statement = "";
+        //Untested code 
         if(digitalRead(hornSwitchPin)== HIGH && disableHorn == true){
             statement = "OFF"; //This turns off the horn
             Particle.publish("Song(O/F):", statement);
@@ -149,6 +156,7 @@ void loop() {
         sampleHornSwitch += 500;
         //Maybe add a button that will switch between remote and website control on the actual controller.
     }
+    //Untested code 
     if(currentTime > sampleLightTimer){
         int buttonState = digitalRead(lightSwitch);
         if(buttonState == HIGH && previvousButtonState == LOW){
