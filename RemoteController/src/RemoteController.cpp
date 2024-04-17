@@ -19,6 +19,7 @@ int centerY = 0;
 int driveControl = 0;
 int previvousButtonState = LOW;
 int brightness = 0;
+bool Lockout = false;
 struct HornSwitch
 {
     int indentify;
@@ -51,15 +52,22 @@ void HornInput(const char *event, const char *data){
         disableHorn = false;
     }
 }
+//Sets the control of the car to either remote or website
+//With the addition of a lockout that doesn't allow the controller to flip between the two
+//This is to prevent the controller from flipping between the two when the user is trying to control the car. The decision is controlled via the particle dashboard.
 void DriveControl(const char *event, const char *data){
-    String Line = String(data);
-    if(Line.indexOf("Remote") > -1){
+    String Line = String(data).toLowerCase();
+    if(Line.indexOf("remote") > -1 || Line.indexOf("r") > -1){
         driveControl = Remote;
+        Particle.publish("Control: ", "Remote");
+        Lockout = false;
     }
-    else if(Line.indexOf("Website") > -1){
+    else if(Line.indexOf("website") > -1 || Line.indexOf("w") > -1){
         driveControl = Website;
+        Particle.publish("Control: ", "Website");
         Particle.unsubscribe(); // unsubscribes from all the events but add one to make sure it knows to switch back to remote control
         Particle.subscribe("DriveControl(R/W):",DriveControl,"24001f001147313134383335");
+        Lockout = true;
     }
 }
 void setup() {
@@ -68,13 +76,15 @@ void setup() {
  pinMode(hornSwitchPin, INPUT_PULLDOWN);
  pinMode(lightSwitch, INPUT_PULLDOWN);
  pinMode(ControlSwitch, INPUT_PULLDOWN);
+ pinMode(D7, OUTPUT);
  for(int i = 0; i < 3; i++){
     pinMode(hornSelectorPins[i].indentify, INPUT_PULLDOWN);
  }
  Serial.begin(9600);
- samplePositionTimer = millis()+500;
- sampleHornSwitch = millis()+500;
- sampleLightTimer = millis()+500;
+ driveControl = Remote;
+ samplePositionTimer = millis()+250;
+ sampleHornSwitch = millis()+250;
+ sampleLightTimer = millis()+250;
  Particle.subscribe("Song(O/F):",HornInput,"24001f001147313134383335");
  Particle.subscribe("DriveControl(R/W):",DriveControl,"24001f001147313134383335"); //This is the event that will be used to switch between remote and website control
  //Gets the center of the joystick
@@ -96,7 +106,17 @@ void loop() {
     unsigned long int currentTime = millis();
         //Splits the joystick into 4 quadrants, and maps the values to -255 to 255
         // Serial.println("SamplePositionTimer: "+ String(samplePositionTimer) + " CurrentTime: "+ String(currentTime));
+        if(Lockout == false){
         if(digitalRead(ControlSwitch) == LOW){
+            driveControl = Remote;
+        } else if(digitalRead(ControlSwitch) == HIGH){
+            driveControl = Website;
+        }
+        }
+        if(driveControl == 0){
+            digitalWrite(D7, HIGH);
+            driveControl = Remote;
+        
     if(currentTime >samplePositionTimer){ 
         //Splits the joystick into 4 quadrants, and maps the values to -255 to 255
     xValRaw = (analogRead(xValPin)-centerX);
@@ -104,12 +124,12 @@ void loop() {
     controlX = map(xValRaw, -centerX, centerX, -255, 255);
     controlY = map(yValRaw, -centerY, centerY, -255, 255);
     //Untested code 
-    if(controlX != previvousxyValues[0] && controlY != previvousxyValues[1]){
+    if(controlX != previvousxyValues[0] || controlY != previvousxyValues[1]){
         Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
         previvousxyValues[0] = controlX;
         previvousxyValues[1] = controlY;
     }
-    samplePositionTimer += 500;
+    samplePositionTimer += 250;
     }
     if(currentTime > sampleHornSwitch){
         hornSelector = 0;
@@ -153,7 +173,7 @@ void loop() {
             }
             Particle.publish("Song(O/F):", statement);
         }
-        sampleHornSwitch += 500;
+        sampleHornSwitch += 250;
         //Maybe add a button that will switch between remote and website control on the actual controller.
     }
     //Untested code 
@@ -170,10 +190,20 @@ void loop() {
         else if(buttonState == LOW){
            previvousButtonState = LOW;
         }
-        sampleLightTimer += 500;
+        sampleLightTimer += 250;
         // Particle.publish("LightLevels:", String(brightness));
     }
     //I will add a button that switchs from off, half lights, and full lights for the car.
     //To change the color of the lights, that will be controlled via the website for obvisous reasons.
+}else if(driveControl == 1){
+    digitalWrite(D7, LOW);
+    //This is the code that will be used to control the car via the website
+} else{
+    if(millis() > samplePositionTimer){
+        digitalWrite(D7, LOW);
+        samplePositionTimer += 250;
+    }else{
+        digitalWrite(D7, HIGH);
+    }
 }
 }

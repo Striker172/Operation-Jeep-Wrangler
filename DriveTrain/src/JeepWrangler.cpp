@@ -4,12 +4,12 @@
 #include "Music_Speaker.h"
 //The pin layout for the Jeep Wrangler
 #define SpeakerPin A0  
-#define PixelPin D1
-#define speakerPin D2
-#define backwardPin D3
-#define forwardPin D4
-#define RightSideMotor D5
-#define LeftSideMotor D6
+#define PixelPin D0
+#define speakerPin D1
+#define backwardPin D2
+#define forwardPin D3
+#define RightSideMotor D4
+#define LeftSideMotor D5
 //Variables for the ILed
 #define PIXEL_COUNT 2
 #define PIXEL_TYPE WS2812
@@ -46,6 +46,7 @@ int setDriveControl(String inputString);
 void beep(int frequency);
 int setLEDColor(String inputString);
 void setLEDBrightness(const char *event, const char *data);
+void showColor(int brightnessValue);
 //Global variables
 int maxPower = 0.0;
 int driveValue[2]; //(x,y) values for the drive train can be removed later, idk depends on how we want to do it
@@ -127,15 +128,15 @@ void beep(int frequency){
 }
 int setDriveControl(String inputString){
   //This will set the drive control to either remote or website and will make a beep sound
-  if(inputString.compareTo("remote") == 0){
+  if(inputString.toLowerCase().compareTo("remote") == 0|| inputString.toLowerCase().compareTo("r") == 0){
     *driveControlPtr = 0;
     beep(1000);
-    Particle.publish("DriveControl:","Remote");
+    Particle.publish("DriveControl(R/W):","Remote");
     return 0;
   }
-  else if(inputString.compareTo("website") == 0){
+  else if(inputString.toLowerCase().compareTo("website") == 0|| inputString.toLowerCase().compareTo("w") == 0){
     *driveControlPtr = 1;
-    Particle.publish("DriveControl:","Website");
+    Particle.publish("DriveControl(R/W):","Website");
     beep(2500);
     return 1;
   }
@@ -178,7 +179,7 @@ int setDriveSpeed(String inputString){
   }
 }
 //This will set the color of the LED only via the website, the remote control will not be able to change the color of the LED
-//Untested code
+
 int setLEDColor(String inputString){
   //The cloud function only for the website
   //The input string will be in the format of "G,R,B,Brightness"
@@ -186,20 +187,25 @@ int setLEDColor(String inputString){
     RGBValues[i] = inputString.substring(0,inputString.indexOf(",")).toInt();
     inputString.remove(0,inputString.indexOf(",")+1);
   }
-  if(RGBValues[3] > 100 || RGBValues[3] < 1){
+  if(RGBValues[3] > 100 || RGBValues[3] < 0){
     return -1;
   }
   //100% is max brigthness, 0% is no brightness
-  int brightness = map(RGBValues[3], 0, 100, 255, 0);
-  int color = strip.Color(RGBValues[1]-brightness, RGBValues[0]-brightness, RGBValues[2]-brightness);
-  strip.setPixelColor(0,color);
-  strip.setPixelColor(1,color);
-  strip.show();
+  showColor(RGBValues[3]);
   return 1;
 }
 //May add more to this but idk.
-//Untested code
+
 void setLEDBrightness(const char *event, const char *data){
   //Only for the controller, honestly we don't have to use this for the controller, it's kind of stupid
   RGBValues[3] = String(data).toInt();
+ showColor(RGBValues[3]);
+}
+void showColor(int brightnessValue){
+  int brightness = map(RGBValues[3], 0, 100, 0,255);
+  Serial.println(brightness);
+  int color = strip.Color((brightness*RGBValues[1]/255), (brightness*RGBValues[0]/255), (brightness*RGBValues[2]/255));
+  strip.setPixelColor(0,color);
+  strip.setPixelColor(1,color);
+  strip.show();
 }
