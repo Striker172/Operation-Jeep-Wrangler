@@ -13,6 +13,7 @@ extern int odetojoy[];
 extern int lionsleeps[];
 extern int brahmslullaby[];
 extern int rickRoll[];
+extern int doomScore[];
 int Music_Speaker::thisNote = 0;
 int Music_Speaker::noteDuration = 0;
 /**
@@ -26,6 +27,7 @@ Music_Speaker::Music_Speaker(int speakerPin)
     this->speakerPin = speakerPin;
     pinMode(speakerPin, OUTPUT);
     SongInfo songIndex[] = {
+      //Number,Note length, tempo, wholenote, songArray
         {0, sizeof(superMarioShort) / sizeof(superMarioShort[0]) / 2, 190, (60000 * 4) / 190,superMarioShort},
         {1, sizeof(darthVaderShort) / sizeof(darthVaderShort[0]) / 2, 170, (60000 * 4) / 170,darthVaderShort},
         {2, sizeof(pinkPantherShort) / sizeof(pinkPantherShort[0]) / 2, 170, (60000 * 4) / 170,pinkPantherShort},
@@ -36,9 +38,10 @@ Music_Speaker::Music_Speaker(int speakerPin)
         {7, sizeof(odetojoy) / sizeof(odetojoy[0]) / 2, 114, (60000 * 4) / 114,odetojoy},
         {8, sizeof(lionsleeps) / sizeof(lionsleeps[0]) / 2, 122, (60000 * 4) / 122,lionsleeps},
         {9, sizeof(brahmslullaby) / sizeof(brahmslullaby[0]) / 2, 76, (60000 * 4) / 76,brahmslullaby},
-        {10, sizeof(rickRoll) / sizeof(rickRoll[0]) / 2, 114, (60000 * 4) / 114,rickRoll}
+        {10, sizeof(rickRoll) / sizeof(rickRoll[0]) / 2, 114, (60000 * 4) / 114,rickRoll},
+        {11, sizeof(doomScore) / sizeof(doomScore[0]) / 2, 225, (60000 * 4) / 225,doomScore}
     };
-    for(int i = 0; i < 11; i++){
+    for(int i = 0; i < sizeof(songIndex); i++){
         this->songIndex[i] = songIndex[i];
     }
     thisNote = 0;

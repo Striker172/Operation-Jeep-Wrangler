@@ -38,14 +38,22 @@ SYSTEM_THREAD(ENABLED);
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
 Music_Speaker speaker(speakerPin);
 Adafruit_NeoPixel strip(PIXEL_COUNT, PixelPin, PIXEL_TYPE);
-//Different methods
+//Functions
+//Set the max speed of the motors, it's based on percentage
 int setDriveSpeed(String inputString);
+//Sets the drive control aka gets the x and y values from the controller or website?
 void setDriveControlXY(const char *event, const char *data);
+//This gets the input from the horn switch and sets the speaker to beep, and sets the song to play
 void HornSwitch(const char *event, const char *data);
+//This will set the drive control to either remote or website and will make a beep sound
 int setDriveControl(String inputString);
+//This will beep the speaker
 void beep(int frequency);
+//Sets the color of the lights on the car *Only for the website!
 int setLEDColor(String inputString);
+//Sets the brightness of the LED lights *Only for the controller
 void setLEDBrightness(const char *event, const char *data);
+//This will show the color of the LED lights
 void showColor(int brightnessValue);
 //Global variables
 int maxPower = 0.0;
@@ -73,9 +81,9 @@ void setup() {
   Particle.subscribe("HornSwitch:",HornSwitch,"2f0028001547313137363331");
   Particle.subscribe("LightLevels:",setLEDBrightness,"2f0028001547313137363331");
   //configure for website control as well.
-  Particle.function("setDriveControl", setDriveControl);
-  Particle.function("Set_Drive_Speed",setDriveSpeed);
-  Particle.function("Set_LED_Color",setLEDColor);
+  Particle.function("setDriveControl(R/W)", setDriveControl);
+  Particle.function("SetDriveSpeed",setDriveSpeed);
+  Particle.function("SetLEDColor(R,G,B,Bright)",setLEDColor);
   Particle.publish("DriveControl:","Remote");
   strip.begin();
 }
@@ -121,23 +129,23 @@ void loop() {
 }
 //Untested code
 void beep(int frequency){
+  //The frequency does nothing, it's just a placeholder for the frequency of the beep if the event that the car isn't moving
   if(driveValue[0] != 0){
      frequency = map(driveValue[0], -255, 255, 0, 10000); //map the frequency to the range of the speaker with how hard the joystick is pushed
   }
-  tone(speakerPin, frequency,500);
+  tone(speakerPin, frequency, 500);
 }
 int setDriveControl(String inputString){
-  //This will set the drive control to either remote or website and will make a beep sound
   if(inputString.toLowerCase().compareTo("remote") == 0|| inputString.toLowerCase().compareTo("r") == 0){
     *driveControlPtr = 0;
-    beep(1000);
+   tone(speakerPin, 1000, 500);
     Particle.publish("DriveControl(R/W):","Remote");
     return 0;
   }
   else if(inputString.toLowerCase().compareTo("website") == 0|| inputString.toLowerCase().compareTo("w") == 0){
     *driveControlPtr = 1;
     Particle.publish("DriveControl(R/W):","Website");
-    beep(2500);
+    tone(speakerPin, 2500, 500);
     return 1;
   }
   return -1;
@@ -167,34 +175,33 @@ void HornSwitch(const char *event, const char *data){
 }
 //Untested Code
 int setDriveSpeed(String inputString){
- //This will set the cap for the speed of the motors, based on percentage
  int input = inputString.toInt();
   if(input > 100 || input < 0){
     //if the person goes over 100 or under 0, it will return -1 and set the maxPower to half speed
     maxPower = 125;
     return -1;
   }else{
-    maxPower = map(input, 0, 100, 255, 0);
+    maxPower = map(input, 0, 100, 0, 255);
     return 2;
   }
 }
-//This will set the color of the LED only via the website, the remote control will not be able to change the color of the LED
 
 int setLEDColor(String inputString){
   //The cloud function only for the website
-  //The input string will be in the format of "G,R,B,Brightness"
+  //The input string will be in the format of "R,G,B,Brightness"
   for(int i =0; i< 4;i++){
     RGBValues[i] = inputString.substring(0,inputString.indexOf(",")).toInt();
     inputString.remove(0,inputString.indexOf(",")+1);
   }
-  if(RGBValues[3] > 100 || RGBValues[3] < 0){
-    return -1;
+  if(RGBValues[3] > 100){
+    RGBValues[3] %= 100;
+  } else if(RGBValues[3] < 0){
+    RGBValues[3] = abs(RGBValues[3]);
   }
   //100% is max brigthness, 0% is no brightness
   showColor(RGBValues[3]);
   return 1;
 }
-//May add more to this but idk.
 
 void setLEDBrightness(const char *event, const char *data){
   //Only for the controller, honestly we don't have to use this for the controller, it's kind of stupid
@@ -202,8 +209,8 @@ void setLEDBrightness(const char *event, const char *data){
  showColor(RGBValues[3]);
 }
 void showColor(int brightnessValue){
+  //Map the brightness value to the range of the LED lights
   int brightness = map(RGBValues[3], 0, 100, 0,255);
-  Serial.println(brightness);
   int color = strip.Color((brightness*RGBValues[1]/255), (brightness*RGBValues[0]/255), (brightness*RGBValues[2]/255));
   strip.setPixelColor(0,color);
   strip.setPixelColor(1,color);
