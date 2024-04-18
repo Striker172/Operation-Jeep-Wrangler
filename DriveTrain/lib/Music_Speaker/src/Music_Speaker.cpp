@@ -41,7 +41,7 @@ Music_Speaker::Music_Speaker(int speakerPin)
         {10, sizeof(rickRoll) / sizeof(rickRoll[0]) / 2, 114, (60000 * 4) / 114,rickRoll},
         {11, sizeof(doomScore) / sizeof(doomScore[0]) / 2, 225, (60000 * 4) / 225,doomScore}
     };
-    for(int i = 0; i < sizeof(songIndex); i++){
+    for(int i = 0; i < 12; i++){
         this->songIndex[i] = songIndex[i];
     }
     thisNote = 0;

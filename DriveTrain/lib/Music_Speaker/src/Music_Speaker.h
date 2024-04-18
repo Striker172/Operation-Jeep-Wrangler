@@ -26,7 +26,7 @@ struct SongInfo {
         int wholenote;
         int* songArray;
     };
-SongInfo songIndex[11];
+SongInfo songIndex[12];
 int divider = 0;
 int speakerPin;
 };

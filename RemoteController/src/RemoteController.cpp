@@ -38,10 +38,11 @@ SYSTEM_THREAD(ENABLED);
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
 //Arrays 
 unsigned long int Timers[3] = {0,0,0};//PostionTimer, HornTimer, LightTimer
+//SongList:
 //1: RickRoll, 2: Doom,3: DarthVader Short,4: Pink Panther Short,5: Pink Panther Long,6: Super Mario Long,7: Lion sleeps tonight
-String hornSongs[] = {"ON","Tune:11","Tune:11","Tune:1","Tune:2","Tune:3","Tune:4","Tune:8"};
-int previvousxyValues[2];
-HornSwitch hornSelectorPins[] = {{hornSelectorPin1,1},{hornSelectorPin2,2},{hornSelectorPin3,4}};
+String hornSongs[] = {"ON","Tune:11","Tune:12","Tune:1","Tune:2","Tune:3","Tune:4","Tune:8"};
+int previvousxyValues[2]; //X,Y
+HornSwitch hornSelectorPins[] = {{hornSelectorPin1,1},{hornSelectorPin2,2},{hornSelectorPin3,4}}; //Pin, value
 void HornInput(const char *event, const char *data){
     String input  = String(data);
     if(input.indexOf("ON") > -1){
@@ -69,6 +70,7 @@ void DriveControl(const char *event, const char *data){
         Lockout = true;
     }
 }
+//Finds the center of the joysticks so it can be used to map the values to -255 to 255
 void findCenter(){
     for(int i = 0; i < 100; i++){
         centerX += analogRead(xValPin);
@@ -86,17 +88,15 @@ void setup() {
  pinMode(D7, OUTPUT);
  for(int i = 0; i < 3; i++){
     pinMode(hornSelectorPins[i].indentify, INPUT_PULLDOWN);
-    Timers[i] = millis()+250;
+    Timers[i] = millis()+500;
  }
  Serial.begin(9600);
  driveControl = Remote;
- Particle.subscribe("Song(O/F):",HornInput,"24001f001147313134383335");
+ Particle.subscribe("Song(O/F):",HornInput,"24001f001147313134383335");//This event is for lock out of the horn on the controller, it currently allows interruptions of the horn
  Particle.subscribe("DriveControl(R/W):",DriveControl,"24001f001147313134383335"); //This is the event that will be used to switch between remote and website control
- //Gets the center of the joystick
  findCenter();
 }
 
-// loop() runs over and over again, as quickly as it can execute.
 void loop() {
     unsigned long int currentTime = millis();
         //Splits the joystick into 4 quadrants, and maps the values to -255 to 255
@@ -114,38 +114,39 @@ void loop() {
         
         if(currentTime >Timers[0]){ 
         //Splits the joystick into 4 quadrants, and maps the values to -255 to 255
-        controlX = map(analogRead(xValPin)-centerX, -centerX, centerX, -255, 255);
-            controlY = map(analogRead(yValPin)-centerY, -centerY, centerY, -255, 255);
+        controlX = map(analogRead(xValPin), -centerX, centerX, -255, 255)-255;
+            controlY = map(analogRead(yValPin), -centerY, centerY, -255, 255) -255;
             if(controlX != previvousxyValues[0] || controlY != previvousxyValues[1]){
                 Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
                 previvousxyValues[0] = controlX;
                 previvousxyValues[1] = controlY;
             }
-    Timers[0] += 250;
+    Timers[0] += 500;
     }
     if(currentTime > Timers[1]){
+        //Controls the horn and song selection
         hornSelector = 0;
-        String statement = "";
+        // String statement = "";
         //Untested code 
         if(digitalRead(hornSwitchPin)== HIGH && disableHorn == true){
-            statement = "OFF"; //This turns off the horn
-            Particle.publish("Song(O/F):", statement);
+            Particle.publish("Song(O/F):", "OFF");
         }
+
         if(digitalRead(hornSwitchPin) == HIGH && disableHorn == false){
             for(int i =0; i < 3;i++){
                  if(digitalRead(hornSelectorPins[i].indentify) == HIGH){
                     hornSelector += hornSelectorPins[i].value;
                  }
             }
-            //I could change it into an array with a struct, but I don't think it's necessary
-            statement = hornSongs[hornSelector];
-            Particle.publish("Song(O/F):", statement);
+            // statement = hornSongs[hornSelector];
+            Particle.publish("Song(O/F):", hornSongs[hornSelector]);
         }
-        Timers[1] += 250;
+        Timers[1] += 500;
         //Maybe add a button that will switch between remote and website control on the actual controller.
     }
     //Untested code 
     if(currentTime > Timers[2]){
+        //Controls the brightness of the lights
         int buttonState = digitalRead(lightSwitch);
         if(buttonState == HIGH && previvousButtonState == LOW){
             if(brightness > 100){
@@ -158,19 +159,18 @@ void loop() {
         else if(buttonState == LOW){
            previvousButtonState = LOW;
         }
-        Timers[2] += 250;
+        Timers[2] += 500;
     }
-    //I will add a button that switchs from off, half lights, and full lights for the car.
-    //To change the color of the lights, that will be controlled via the website for obvisous reasons.
 }else if(driveControl == 1){
     digitalWrite(D7, LOW);
     //This is the code that will be used to control the car via the website
 } else{
-    if(millis() > Timers[0]){
-        digitalWrite(D7, LOW);
-        Timers[0] += 250;
-    }else{
-        digitalWrite(D7, HIGH);
-    }
+    //may change this for it to have it's own timer and such. Depends
+    // if(millis() > Timers[0]){
+    //     digitalWrite(D7, LOW);
+    //     Timers[0] += ;
+    // }else{
+    //     digitalWrite(D7, HIGH);
+    // }
 }
 }

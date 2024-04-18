@@ -6,10 +6,10 @@
 #define SpeakerPin A0  
 #define PixelPin D0
 #define speakerPin D1
-#define backwardPin D2
-#define forwardPin D3
-#define RightSideMotor D4
-#define LeftSideMotor D5
+#define backwardPin D5
+#define forwardPin D4
+#define RightSideMotor D2
+#define LeftSideMotor D3
 //Variables for the ILed
 #define PIXEL_COUNT 2
 #define PIXEL_TYPE WS2812
@@ -74,6 +74,7 @@ void setup() {
   for(int i = 0; i < 2; i++){
     pinMode(Motors[i].pins.powerPin, OUTPUT);
   }
+  Serial.begin(9600);
   pinMode(forwardPin, OUTPUT);
   pinMode(backwardPin, OUTPUT);
   pinMode(speakerPin, OUTPUT);
@@ -88,33 +89,61 @@ void setup() {
   strip.begin();
 }
 
-void onlineControl(){
-  //read the input from the cloud and set the output pins accordingly
-  //if the input is high, set the output pin high
-  //if the input is low, set the output pin low
-  //Have the code be exponential, meaning inside of adding 1 to the data times it by a certain number, same for direction then send the data
-  //to the photon but each time 
-  /*While(one of the buttons is press){
-    detected which key is pressed and have it be exponential each time while sending the data to the photon.
-    sendData(x,y);
-    x*=2; y*=2; once a button is released like a or d have the value be zero. same for w and s
-  }
-  */
-}
 
+void Drive(){
+  //Stop
+
+  if(driveValue[0] == 0 && driveValue[1] == 0){
+    analogWrite(Motors[0].pins.powerPin, 0);
+    analogWrite(Motors[1].pins.powerPin, 0);
+    digitalWrite(forwardPin, LOW);
+    digitalWrite(backwardPin, LOW);
+  }
+  else if(driveValue[1] >= 0){
+    digitalWrite(forwardPin, HIGH);
+    digitalWrite(backwardPin, LOW);
+    if(driveValue[0] < 0){
+      //Right 
+      analogWrite(Motors[0].pins.powerPin, driveValue[0]);
+      analogWrite(Motors[1].pins.powerPin, abs(driveValue[1]));
+    } else if(driveValue[0] > 0){
+      //Left
+      analogWrite(Motors[0].pins.powerPin, driveValue[1]);
+      analogWrite(Motors[1].pins.powerPin, driveValue[0]);
+    }else if (driveValue[0] == 0){
+      //Forward
+      analogWrite(Motors[0].pins.powerPin, driveValue[1]);
+      analogWrite(Motors[1].pins.powerPin, driveValue[1]);
+    }
+    //Backward
+  } else if(driveValue[1] <= 0){
+    digitalWrite(forwardPin, LOW);
+    digitalWrite(backwardPin, HIGH);
+    if(driveValue[0] <= 0){
+      //Right
+      analogWrite(Motors[0].pins.powerPin, abs(driveValue[0]));
+      analogWrite(Motors[1].pins.powerPin, abs(driveValue[1]));
+    } else if(driveValue[0] > 0){
+      analogWrite(Motors[0].pins.powerPin, driveValue[1]);
+      analogWrite(Motors[1].pins.powerPin, abs(driveValue[0]));
+    } else if (driveValue[0] == 0){
+      analogWrite(Motors[0].pins.powerPin, abs(driveValue[1]));
+      analogWrite(Motors[1].pins.powerPin, abs(driveValue[1]));
+    }
+  }
+
+}
+unsigned long PosTimer = millis() + 1000;
 void loop() {
   // onlineControl();
   if(driveControl == 0){
-    //remote control
-    //read the input from the remote and set the output pins accordingly
-    //if the input is high, set the output pin high
-    //if the input is low, set the output pin low
+    if(millis() > PosTimer){
+      Drive();
+      PosTimer = millis() + 1000;
+    }
   }
   else if(driveControl == 1){
-    //website control
-    //read the input from the cloud and set the output pins accordingly
-    //if the input is high, set the output pin high
-    //if the input is low, set the output pin low
+    Drive();
   }
   //The code for the player to work, it will only activiate if the somebody presses the button.
   if(speaker.tuneIsOn){
@@ -127,30 +156,6 @@ void loop() {
     previvousState = speaker.tuneIsOn;
   }
 
-  //Motor Control
-  if(driveValue[0] > 0){
-    digitalWrite(forwardPin, HIGH);
-    digitalWrite(backwardPin, LOW);
-  } else if(driveValue[0] < 0){
-    digitalWrite(forwardPin, LOW);
-    digitalWrite(backwardPin, HIGH);
-  } else {
-    analogWrite(Motors[0].pins.powerPin, 0);
-    digitalWrite(forwardPin, LOW);
-    digitalWrite(backwardPin, LOW);
-  }
-
-  if(driveValue[1] > 0){
-    digitalWrite(LeftSideMotor, HIGH);
-    digitalWrite(RightSideMotor, LOW);
-  } else if(driveValue[1] < 0){
-    digitalWrite(RightSideMotor, HIGH);
-    digitalWrite(LeftSideMotor, LOW);
-  } else {
-    digitalWrite(forwardPin, LOW);
-    digitalWrite(backwardPin, LOW);
-  }
-  delay(100);
 
 }
 //Untested code
@@ -177,11 +182,18 @@ int setDriveControl(String inputString){
   return -1;
 }
 void setDriveControlXY(const char *event, const char *data){
-  String inputString = String(data);
-  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
-  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
-  driveValue[0] = xValue;
-  driveValue[1] = yValue;
+  driveValue[0] = String(data).substring(0, String(data).indexOf(",")).toInt(); //get the x value
+  driveValue[1] = String(data).substring(String(data).indexOf(",")+1).toInt(); //get the y value
+  if(driveValue[0] > 255){
+    driveValue[0] = 255;
+  } else if(driveValue[0] < -255){
+    driveValue[0] = -255;
+  }
+  if(driveValue[1] > 255){
+   driveValue[1]= 255;
+  } else if(driveValue[1] < -255){
+    driveValue[1] = -255;
+  }
 }
 void HornSwitch(const char *event, const char *data){
   String inputString = String(data);
