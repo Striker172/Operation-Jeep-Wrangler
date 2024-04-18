@@ -126,6 +126,32 @@ void loop() {
     Particle.publish("Song(O/F):","false");
     previvousState = speaker.tuneIsOn;
   }
+
+  //Motor Control
+  if(driveValue[0] > 0){
+    digitalWrite(forwardPin, HIGH);
+    digitalWrite(backwardPin, LOW);
+  } else if(driveValue[0] < 0){
+    digitalWrite(forwardPin, LOW);
+    digitalWrite(backwardPin, HIGH);
+  } else {
+    analogWrite(Motors[0].pins.powerPin, 0);
+    digitalWrite(forwardPin, LOW);
+    digitalWrite(backwardPin, LOW);
+  }
+
+  if(driveValue[1] > 0){
+    digitalWrite(LeftSideMotor, HIGH);
+    digitalWrite(RightSideMotor, LOW);
+  } else if(driveValue[1] < 0){
+    digitalWrite(RightSideMotor, HIGH);
+    digitalWrite(LeftSideMotor, LOW);
+  } else {
+    digitalWrite(forwardPin, LOW);
+    digitalWrite(backwardPin, LOW);
+  }
+  delay(100);
+
 }
 //Untested code
 void beep(int frequency){
