@@ -39,8 +39,8 @@ SerialLogHandler logHandler(LOG_LEVEL_INFO);
 //Arrays 
 unsigned long int Timers[3] = {0,0,0};//PostionTimer, HornTimer, LightTimer
 //SongList:
-//1: RickRoll, 2: Doom,3: DarthVader Short,4: Pink Panther Short,5: Pink Panther Long,6: Super Mario Long,7: Lion sleeps tonight
-String hornSongs[] = {"ON","Tune:11","Tune:12","Tune:1","Tune:2","Tune:3","Tune:4","Tune:8"};
+//1: RickRoll, 2: Doom,3: DarthVader Short,4: Song of Storms,5: Pink Panther Long,6: Super Mario Long,7: Lion sleeps tonight
+String hornSongs[] = {"ON","TUNE:11","TUNE:12","TUNE:13","TUNE:2","TUNE:3","TUNE:4","TUNE:8"};
 int previvousxyValues[2]; //X,Y
 HornSwitch hornSelectorPins[] = {{hornSelectorPin1,1},{hornSelectorPin2,2},{hornSelectorPin3,4}}; //Pin, value
 void HornInput(const char *event, const char *data){
@@ -129,7 +129,7 @@ void loop() {
         // String statement = "";
         //Untested code 
         if(digitalRead(hornSwitchPin)== HIGH && disableHorn == true){
-            Particle.publish("Song(O/F):", "OFF");
+            Particle.publish("HornSwitch:", "OFF");
         }
 
         if(digitalRead(hornSwitchPin) == HIGH && disableHorn == false){
@@ -139,7 +139,7 @@ void loop() {
                  }
             }
             // statement = hornSongs[hornSelector];
-            Particle.publish("Song(O/F):", hornSongs[hornSelector]);
+            Particle.publish("HornSwitch:", hornSongs[hornSelector]);
         }
         Timers[1] += 500;
         //Maybe add a button that will switch between remote and website control on the actual controller.

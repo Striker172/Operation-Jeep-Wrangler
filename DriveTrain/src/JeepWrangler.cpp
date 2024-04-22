@@ -2,9 +2,9 @@
 #include "neopixel.h"
 #include "Particle.h"
 #include "Music_Speaker.h"
-//The pin layout for the Jeep Wrangler
-#define SpeakerPin A0  
+//The pin layout for the Jeep Wrangler 
 #define PixelPin D0
+#define SpeakerPin A1
 #define speakerPin D1
 #define backwardPin D5
 #define forwardPin D4
@@ -56,7 +56,7 @@ void setLEDBrightness(const char *event, const char *data);
 //This will show the color of the LED lights
 void showColor(int brightnessValue);
 //Global variables
-int maxPower = 0.0;
+int maxPower = 100;
 int driveValue[2]; //(x,y) values for the drive train can be removed later, idk depends on how we want to do it
 int driveControl = 0; //0 for remote control, 1 for website control
 int* driveControlPtr = &driveControl; // a pointer to the driveControl variable, where it can switch between remote and website control
@@ -87,12 +87,17 @@ void setup() {
   Particle.function("SetLEDColor(R,G,B,Bright)",setLEDColor);
   Particle.publish("DriveControl:","Remote");
   strip.begin();
+  RGBValues[0] = 255;
+  RGBValues[1] = 255;
+  RGBValues[2] = 255;
+  RGBValues[3] = 100;
 }
 
 
 void Drive(){
   //Stop
-
+  driveValue[0] = driveValue[0] * maxPower/255;
+  driveValue[1] = driveValue[1] * maxPower/255;
   if(driveValue[0] == 0 && driveValue[1] == 0){
     analogWrite(Motors[0].pins.powerPin, 0);
     analogWrite(Motors[1].pins.powerPin, 0);
@@ -150,6 +155,12 @@ void loop() {
     speaker.playSong(selectedSong); 
     previvousState = !speaker.tuneIsOn;
   } else if(previvousState == true && speaker.tuneIsOn == false){
+    if(selectedSong == 12){
+      RGBValues[0] = 0;
+      RGBValues[1] = 50;
+      RGBValues[2] = 255;
+      RGBValues[3] = 100;
+    }
     noTone(speakerPin);
     //This will publish for disabling input, however, it will still allow for interrupts to happen unless we change the code.
     Particle.publish("Song(O/F):","false");
@@ -199,14 +210,18 @@ void HornSwitch(const char *event, const char *data){
   String inputString = String(data);
   if(inputString.indexOf("ON") > -1){
     beep(1000);
+    speaker.thisNote = 0;
+    speaker.tuneIsOn= false;
   }
   else if(inputString.indexOf("OFF") > -1){
     noTone(speakerPin);
     speaker.tuneIsOn = false;
     speaker.thisNote = 0;
   } else if(inputString.indexOf("TUNE:") > -1){
+    speaker.thisNote = 0;
     inputString = inputString.substring(inputString.indexOf(":")+1); // This gets the number between the interrupt pin and :
-    selectedSong = inputString.toInt();
+    selectedSong = inputString.toInt()-1;
+    Serial.println(selectedSong);
     Particle.publish("Song(O/F):","true"); //This allows for interrupts to happen
     speaker.tuneIsOn = !speaker.tuneIsOn;
   }
@@ -219,7 +234,7 @@ int setDriveSpeed(String inputString){
     maxPower = 125;
     return -1;
   }else{
-    maxPower = map(input, 0, 100, 0, 255);
+   maxPower = map(input, 0, 100, 0, 255); //map the input to the range of the motor speed
     return 2;
   }
 }

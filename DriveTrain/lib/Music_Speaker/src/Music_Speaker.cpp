@@ -14,6 +14,7 @@ extern int lionsleeps[];
 extern int brahmslullaby[];
 extern int rickRoll[];
 extern int doomScore[];
+extern int songOfStorms[];
 int Music_Speaker::thisNote = 0;
 int Music_Speaker::noteDuration = 0;
 /**
@@ -39,9 +40,10 @@ Music_Speaker::Music_Speaker(int speakerPin)
         {8, sizeof(lionsleeps) / sizeof(lionsleeps[0]) / 2, 122, (60000 * 4) / 122,lionsleeps},
         {9, sizeof(brahmslullaby) / sizeof(brahmslullaby[0]) / 2, 76, (60000 * 4) / 76,brahmslullaby},
         {10, sizeof(rickRoll) / sizeof(rickRoll[0]) / 2, 114, (60000 * 4) / 114,rickRoll},
-        {11, sizeof(doomScore) / sizeof(doomScore[0]) / 2, 225, (60000 * 4) / 225,doomScore}
+        {11, sizeof(doomScore) / sizeof(doomScore[0]) / 2, 225, (60000 * 4) / 225,doomScore},
+        {12, sizeof(songOfStorms) / sizeof(songOfStorms[0]) / 2, 115, (60000 * 4) / 115,songOfStorms}
     };
-    for(int i = 0; i < 12; i++){
+    for(int i = 0; i < 13; i++){
         this->songIndex[i] = songIndex[i];
     }
     thisNote = 0;
