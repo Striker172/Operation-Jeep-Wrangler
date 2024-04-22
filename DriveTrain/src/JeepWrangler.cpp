@@ -83,7 +83,7 @@ void setup() {
   //configure for website control as well.
   Particle.function("setDriveControl(R/W)", setDriveControl);
   Particle.function("SetDriveSpeed",setDriveSpeed);
-  Particle.function("SetLEDColor(R,G,B,Bright)",setLEDColor);
+  Particle.function("SetLEDColor",setLEDColor);
   Particle.publish("DriveControl:","Remote");
   strip.begin();
 }
