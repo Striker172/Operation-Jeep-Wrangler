@@ -57,7 +57,6 @@ int setLEDColor(String inputString);
 void setLEDBrightness(const char *event, const char *data);
 //This will show the color of the LED lights
 void showColor(int brightnessValue);
-int setCloudDriveControlXY(String inputString);
 //How the car will get horn input from the website
 int HornSwitchWeb(String inputString);
 //Global variables
@@ -103,77 +102,79 @@ void setup() {
   RGBValues[3] = 100;
 }
 
-
-
-unsigned long PosTimer = millis() + 500;
-void loop() {
-  // onlineControl();
-  if(driveControl == 0){
-    if(millis() > PosTimer){
-       //Stop
+void Drive(){
   int driveDirection = 0;
   driveValue[0] = driveValue[0] * maxPower / 255;
   driveValue[1] = driveValue[1] * maxPower / 255;
 if(driveValue[0] == 0 && driveValue[1] == 0){
   driveDirection = 100;
-   digitalWrite(backwardPin, HIGH);
-    digitalWrite(forwardPin, HIGH);
+   digitalWrite(backwardPin, LOW);
+    digitalWrite(forwardPin, LOW);
 }
 else if(driveValue[1] >= 0){
-  digitalWrite(backwardPin, LOW);
-  digitalWrite(forwardPin, HIGH);
-  if ( driveValue[0] == 0 || driveValue[0] > 0){
-    driveDirection = 0;
+  if ( driveValue[0] == 0){
+    digitalWrite(backwardPin, HIGH);
+    digitalWrite(forwardPin, HIGH);
   }
   else if(driveValue[0] < 0){
-    // Right 
-    driveDirection = 3;
+    digitalWrite(backwardPin, HIGH);
+    digitalWrite(forwardPin, LOW);
   } else if(driveValue[0] > 0){
-    // Left
+    digitalWrite(backwardPin, LOW);
+    digitalWrite(forwardPin, HIGH);
    driveDirection = 2;
   }
 } else if(driveValue[1] < 0){
-  digitalWrite(backwardPin, HIGH);
-  digitalWrite(forwardPin, LOW);
-  if (driveValue[0] ==0  || driveValue[0] < 0){
+  if (driveValue[0] ==0){
     // Backward
+    digitalWrite(backwardPin, HIGH);
+    digitalWrite(forwardPin, HIGH);
     driveDirection = 0;
   }
   else if(driveValue[0] <= 0){
-    // Right
+    digitalWrite(backwardPin, HIGH);
+    digitalWrite(forwardPin, LOW);
    driveDirection = 3;
   } else if(driveValue[0] > 0){
     driveDirection = 2;
+    digitalWrite(backwardPin, LOW);
+    digitalWrite(forwardPin, HIGH);
   }
 }
-Serial.println(driveDirection);
-switch(driveDirection){
-  case 0:
-  //forward
-  analogWrite(Motors[0].pins.powerPin, abs(driveValue[1]));
-  analogWrite(Motors[1].pins.powerPin, abs(driveValue[1]));
-  break;
-  case 2:
-  //left
-  analogWrite(Motors[0].pins.powerPin, abs(driveValue[1]));
-  analogWrite(Motors[1].pins.powerPin, abs(driveValue[0]));
-  break;
-  case 3:
-  //right
-  analogWrite(Motors[0].pins.powerPin, abs(driveValue[0]));
-  analogWrite(Motors[1].pins.powerPin, abs(driveValue[1]));
-  break;
-  default:
-  analogWrite(Motors[0].pins.powerPin, 0);
-  analogWrite(Motors[1].pins.powerPin, 0);
-  break;
+// switch(driveDirection){
+//   case 0:
+//   //forward
+  
+//   analogWrite(LeftSideMotor, abs(driveValue[1]));
+//   analogWrite(RightSideMotor, abs(driveValue[1]));
+  
+//   break;
+//   case 2:
+//   //left
+//   analogWrite(Motors[0].pins.powerPin, abs(driveValue[1]));
+//   analogWrite(Motors[1].pins.powerPin,abs(driveValue[0]));
+//   break;
+//   case 3:
+//   //right
+//   analogWrite(Motors[0].pins.powerPin, abs(driveValue[0]));
+//   analogWrite(Motors[1].pins.powerPin, abs(driveValue[1]));
+//   break;
+//   default:
+//   analogWrite(Motors[0].pins.powerPin, 0);
+//   analogWrite(Motors[1].pins.powerPin, 0);
+//   break;
+// }
 }
+
+unsigned long PosTimer = millis() + 500;
+void loop() {
+  // onlineControl();
+    if(millis() > PosTimer){
+       Drive();
+  
       PosTimer = millis() + 500;
     }
-      
-    }
-  else if(driveControl == 1){
-  }
+
   //The code for the player to work, it will only activiate if the somebody presses the button.
   if(speaker.tuneIsOn){
     speaker.playSong(selectedSong); 
@@ -184,31 +185,6 @@ switch(driveDirection){
     Particle.publish("Song(O/F):","false");
     previvousState = speaker.tuneIsOn;
   }
-
-  //Motor Control
-  if(driveValue[0] > 0){
-    digitalWrite(forwardPin, HIGH);
-    digitalWrite(backwardPin, LOW);
-  } else if(driveValue[0] < 0){
-    digitalWrite(forwardPin, LOW);
-    digitalWrite(backwardPin, HIGH);
-  } else {
-    analogWrite(Motors[0].pins.powerPin, 0);
-    digitalWrite(forwardPin, LOW);
-    digitalWrite(backwardPin, LOW);
-  }
-
-  if(driveValue[1] > 0){
-    digitalWrite(LeftSideMotor, HIGH);
-    digitalWrite(RightSideMotor, LOW);
-  } else if(driveValue[1] < 0){
-    digitalWrite(RightSideMotor, HIGH);
-    digitalWrite(LeftSideMotor, LOW);
-  } else {
-    digitalWrite(forwardPin, LOW);
-    digitalWrite(backwardPin, LOW);
-  }
-  delay(100);
 
 }
 //Untested code
@@ -254,6 +230,8 @@ void HornSwitch(const char *event, const char *data){
   String inputString = String(data);
   if(inputString.indexOf("ON") > -1){
     beep(1000);
+    speaker.tuneIsOn = false;
+    speaker.thisNote = 0;
   }
   else if(inputString.indexOf("OFF") > -1){
     noTone(speakerPin);
@@ -312,11 +290,4 @@ void showColor(int brightnessValue){
   strip.setPixelColor(0,color);
   strip.setPixelColor(1,color);
   strip.show();
-}
-int setCloudDriveControlXY(String inputString){
-  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
-  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
-  driveValue[0] = xValue;
-  driveValue[1] = yValue;
-  return 0;
 }
