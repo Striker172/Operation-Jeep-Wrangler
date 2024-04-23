@@ -293,31 +293,4 @@ void showColor(int brightnessValue){
   strip.setPixelColor(0,color);
   strip.setPixelColor(1,color);
   strip.show();
-<<<<<<< HEAD
-}
-int setCloudDriveControlXY(String inputString){
-  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
-  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
-  driveValue[0] = xValue;
-  driveValue[1] = yValue;
-  return 0;
-}
-
-int setCloudHorn(String inputString){
- if(inputString.indexOf("ON") > -1){
-    beep(1000);
-  }
-  else if(inputString.indexOf("OFF") > -1){
-    noTone(speakerPin);
-    speaker.tuneIsOn = false;
-    speaker.thisNote = 0;
-  } else if(inputString.indexOf("TUNE:") > -1){
-    inputString = inputString.substring(inputString.indexOf(":")+1); // This gets the number between the interrupt pin and :
-    selectedSong = inputString.toInt()-1;
-    Particle.publish("Song(O/F):","true"); //This allows for interrupts to happen
-    speaker.tuneIsOn = !speaker.tuneIsOn;
-  } 
-  return 0;
-=======
->>>>>>> 05f4615f6ed75fe0fe6fb5d63639d0053c78fcd2
 }
