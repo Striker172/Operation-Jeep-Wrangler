@@ -43,6 +43,8 @@ Adafruit_NeoPixel strip(PIXEL_COUNT, PixelPin, PIXEL_TYPE);
 int setDriveSpeed(String inputString);
 //Sets the drive control aka gets the x and y values from the controller or website?
 void setDriveControlXY(const char *event, const char *data);
+//Sets the drive control aka gets the x and y values from the website
+int setCloudDriveControlXY(String inputString);
 //This gets the input from the horn switch and sets the speaker to beep, and sets the song to play
 void HornSwitch(const char *event, const char *data);
 //This will set the drive control to either remote or website and will make a beep sound
@@ -91,7 +93,7 @@ void setup() {
   Particle.function("setDriveControl(R/W)", setDriveControl);
   Particle.function("SetDriveSpeed",setDriveSpeed);
   Particle.function("SetLEDColor",setLEDColor);
-  Particle.function("HornSwitchWeb",HornSwitchWeb);
+  Particle.function("SetCloudDriveControl", setCloudDriveControlXY);
   Particle.publish("DriveControl:","Remote");
   strip.begin();
 
@@ -233,23 +235,21 @@ int setDriveControl(String inputString){
   return -1;
 }
 void setDriveControlXY(const char *event, const char *data){
-  if(strlen(data) == 0){
-    return;
-  }else{
-  driveValue[0] = String(data).substring(0, String(data).indexOf(",")).toInt(); //get the x value
-  driveValue[1] = String(data).substring(String(data).indexOf(",")+1).toInt(); //get the y value
-  if(driveValue[0] > 255){
-    driveValue[0] = 255;
-  } else if(driveValue[0] < -255){
-    driveValue[0] = -255;
-  }
-  if(driveValue[1] > 255){
-   driveValue[1]= 255;
-  } else if(driveValue[1] < -255){
-    driveValue[1] = -255;
-  }
+  String inputString = String(data);
+  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
+  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
+  driveValue[0] = xValue;
+  driveValue[1] = yValue;
 }
+
+int setCloudDriveControlXY(String inputString){
+  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
+  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
+  driveValue[0] = xValue;
+  driveValue[1] = yValue;
+  return 0;
 }
+
 void HornSwitch(const char *event, const char *data){
   String inputString = String(data);
   if(inputString.indexOf("ON") > -1){
