@@ -24,14 +24,17 @@
               </div>
               <nav class="p-navigation__nav" aria-label="Example main">
                 <ul class="p-navigation__items">
-                  <li class="p-navigation__item is-selected">
-                    <a class="p-navigation__link" href="#">Project Repo</a>
+                  <li class="p-navigation__item">
+                    <a class="p-navigation__link" href="https://github.com/tritrest">Abdoul Khaleed Ouro</a>
                   </li>
                   <li class="p-navigation__item">
-                    <a class="p-navigation__link" href="#">Services</a>
+                    <a class="p-navigation__link" href="https://github.com/Striker172">Ernest Blake</a>
                   </li>
                   <li class="p-navigation__item">
-                    <a class="p-navigation__link" href="#">Partners</a>
+                    <a class="p-navigation__link" href="https://github.com/CrisperTomcat">Thomas Goodman</a>
+                  </li>
+                  <li class="p-navigation__item">
+                    <a class="p-navigation__link" href="https://github.com/sfisher9793">Sam Fisher</a>
                   </li>
                 </ul>
               </nav>
@@ -48,117 +51,119 @@
             </div>
         <section>
 
+        
+        <form name="driveForm" action="https://api.particle.io/v1/devices/24001f001147313134383335/SetCloudDriveControl?access_token=7a028270cff3c994b5fbd54776b84db7440fa262" method="POST">
+          <label>Driving Coordinates</label>
+          <input id="formInput" type="text" name="args" value="x,y"><br>
+          <input type="submit" value="Auto Submit">
+        </form>
+
         <script>
-            var dir = "center";
-            var dirX = 0;
-            var dirY = 0;
+          var dirX = 0;
+          var dirY = 0;
 
-            let key = {
-                w: false,
-                a: false,
-                s: false,
-                d: false,
-            };
+          let key = {
+              w: false,
+              a: false,
+              s: false,
+              d: false,
+          };
 
-            document.addEventListener("keydown", event =>{
+          document.addEventListener("keydown", event =>{
 
-                if (event.key === "w") {
-                    key.w = true;
-                }
-                
-                if (event.key === "a") {
-                    key.a = true;
-                }
+              if (event.key === "w") {
+                  key.w = true;
+              }
+              
+              if (event.key === "a") {
+                  key.a = true;
+              }
 
-                if (event.key === "s") {
-                  key.s = true;
-                }
+              if (event.key === "s") {
+                key.s = true;
+              }
 
-                if (event.key === "d") {
-                  key.d = true;
-                }
+              if (event.key === "d") {
+                key.d = true;
+              }
 
-                if(key.w && key.d){
-                    dirY += 1;
-                    dirX += 1;
-                }else if(key.w){
-                    dirY += 1;
-                }else if(key.d){
-                    dirX += 1;
-                }
+              if(key.w && key.d){
+                  dirY += 1;
+                  dirX += 1;
+              }else if(key.w){
+                  dirY += 1;
+              }else if(key.d){
+                  dirX += 1;
+              }
 
-                if(key.w && key.a){
-                    dirY += 1;
-                    dirX -= 1;
-                }else if(key.a){
-                    dirX -= 1;
-                }
+              if(key.w && key.a){
+                  dirY += 1;
+                  dirX -= 1;
+              }else if(key.a){
+                  dirX -= 1;
+              }
 
-                if(key.s && key.d){
-                    dirY -= 1;
-                    dirX += 1;
-                }else if(key.s){
-                    dirY -= 1;
-                }
+              if(key.s && key.d){
+                  dirY -= 1;
+                  dirX += 1;
+              }else if(key.s){
+                  dirY -= 1;
+              }
 
-                if(key.s && key.a){
-                    dirY -= 1;
-                    dirX -= 1;
-                }
-                
-                document.getElementById("xValue").innerHTML = dirX;
-                document.getElementById("yValue").innerHTML = dirY;
-            });
+              if(key.s && key.a){
+                  dirY -= 1;
+                  dirX -= 1;
+              }
+              
+              document.getElementById("xValue").innerHTML = dirX;
+              document.getElementById("yValue").innerHTML = dirY;
+              document.getElementById("formInput").value = dirX.toString() + "," + dirY.toString();
+          });
 
 
-            document.addEventListener("keyup", event =>{
+          document.addEventListener("keyup", event =>{
 
-                if (event.key === "w") {
-                    key.w = false;
-                }
-                
-                if (event.key === "a") {
-                    key.a = false;
-                }
+              if (event.key === "w") {
+                  key.w = false;
+              }
+              
+              if (event.key === "a") {
+                  key.a = false;
+              }
 
-                if (event.key === "s") {
-                  key.s = false;
-                }
+              if (event.key === "s") {
+                key.s = false;
+              }
 
-                if (event.key === "d") {
-                  key.d = false;
-                }
+              if (event.key === "d") {
+                key.d = false;
+              }
 
-                dirX = 0;
-                dirY = 0;
+              dirX = 0;
+              dirY = 0;
 
-                document.getElementById("xValue").innerHTML = dirX;
-                document.getElementById("yValue").innerHTML = dirY;
-            });
-
-        </script>
+              document.getElementById("xValue").innerHTML = dirX;
+              document.getElementById("yValue").innerHTML = dirY;
+              document.getElementById("formInput").value = dirX.toString() + "," + dirY.toString();
+          });
         
-        <script type="text/javascript">
-            //*****WORK HERE*****
-            function start(objButton) {
-              var deviceID = "2b0041001247313137363331";
-              var accessToken = "495de6d1976598285cd143cf31975e5b4558b80a";
-              var baseURL = "https://api.particle.io/v1/devices/"
-              var varName = "tempC_CLOUD"; // your cloud variable name goes here
-        
-        
-              requestURL = baseURL + deviceID + "/" + varName + "/?access_token=" + accessToken;
-              $.getJSON(requestURL, function(json) {
-                document.getElementById("current_temp").innerHTML = json.result;
-              });
-           
-              var varName = "cV_targetTemp";  // this is another cloud variable name
-              requestURL = baseURL + deviceID + "/" + varName + "/?access_token=" + accessToken;
-              $.getJSON(requestURL, function(json) {
-                document.getElementById("desired_temp").innerHTML = json.result;
-              });
-            }
-          </script>
+      </script>
 
+      <script>
+        
+        var auto_refresh = setInterval(function() {
+          submitform();
+        }, 2000);
+        function submitform() {
+            //alert(document.getElementById("formInput").value);
+            document.myForm.submit();
+        }
+      </script>
+
+      <form action="https://api.particle.io/v1/devices/24001f001147313134383335/setLEDColor?access_token=7a028270cff3c994b5fbd54776b84db7440fa262" method="POST">
+        <label>Set LED colors. Format: (R, G, B, Brightness)</label>
+        <input type="text" name="args" value="R,G,B,100"><br>
+        <input type="submit" value="Do it!">
+      </form>
     </body>
 </html>
