@@ -105,6 +105,7 @@ extern int lionsleeps[602];
 extern int brahmslullaby[108];
 extern int rickRoll[680];
 extern int doomScore[1360];
+extern int songOfStorms[134];
 // notes of the melody followed by the duration. A 4 means a quarter note, 8 an eighteenth , 16 sixteenth, so on 
 // negative numbers are used to represent dotted notes, so -4 means a dotted quarter note, that is, a quarter plus an eighteenth!!
 //20

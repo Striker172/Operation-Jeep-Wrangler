@@ -114,14 +114,13 @@ void loop() {
         
         if(currentTime >Timers[0]){ 
         //Splits the joystick into 4 quadrants, and maps the values to -255 to 255
-        controlX = map(analogRead(xValPin)-centerX, -centerX, centerX, -255, 255);
-            controlY = map(analogRead(yValPin)-centerY, -centerY, centerY, -255, 255);
-            if(controlX != previvousxyValues[0] || controlY != previvousxyValues[1]){
+        controlX = map(analogRead(xValPin), -centerX, centerX, -255, 255)-255;
+            controlY = map(analogRead(yValPin), -centerY, centerY, -255, 255) -255;
+            
                 Particle.publish("ControlValues(x,y): ", String(controlX)+ String(",")+ String(controlY));
                 previvousxyValues[0] = controlX;
                 previvousxyValues[1] = controlY;
-            }
-    Timers[0] += 250;
+    Timers[0] += 500;
     }
     if(currentTime > Timers[1]){
         hornSelector = 0;

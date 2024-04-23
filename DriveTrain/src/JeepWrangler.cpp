@@ -55,9 +55,12 @@ int setLEDColor(String inputString);
 void setLEDBrightness(const char *event, const char *data);
 //This will show the color of the LED lights
 void showColor(int brightnessValue);
+int setCloudDriveControlXY(String inputString);
+//How the car will get horn input from the website
+int HornSwitchWeb(String inputString);
 //Global variables
-int maxPower = 0.0;
-int driveValue[2]; //(x,y) values for the drive train can be removed later, idk depends on how we want to do it
+int maxPower = 100;
+int static driveValue[2]; //(x,y) values for the drive train can be removed later, idk depends on how we want to do it
 int driveControl = 0; //0 for remote control, 1 for website control
 int* driveControlPtr = &driveControl; // a pointer to the driveControl variable, where it can switch between remote and website control
 int selectedSong = 0; //This is the song that is selected to play
@@ -71,50 +74,103 @@ MotorControl Motors[2] = {
 
 void setup() {
   // Put initialization like pinMode and begin functions here
-  for(int i = 0; i < 2; i++){
-    pinMode(Motors[i].pins.powerPin, OUTPUT);
-  }
+  driveValue[0] = 0;
+  driveValue[1] = 0;
+
+  Serial.begin(9600);
+  pinMode(RightSideMotor, OUTPUT);
+  pinMode(LeftSideMotor, OUTPUT);
   pinMode(forwardPin, OUTPUT);
   pinMode(backwardPin, OUTPUT);
   pinMode(speakerPin, OUTPUT);
-  Particle.subscribe("ControlValues(x,y)", setDriveControlXY,"2f0028001547313137363331");
+  Particle.subscribe("ControlValues(x,y):", setDriveControlXY,"2f0028001547313137363331");
   Particle.subscribe("HornSwitch:",HornSwitch,"2f0028001547313137363331");
   Particle.subscribe("LightLevels:",setLEDBrightness,"2f0028001547313137363331");
   //configure for website control as well.
+  Particle.function("SetCloudDriveControl", setCloudDriveControlXY);
   Particle.function("setDriveControl(R/W)", setDriveControl);
   Particle.function("SetDriveSpeed",setDriveSpeed);
-  Particle.function("SetLEDColor(R,G,B,Bright)",setLEDColor);
+  Particle.function("SetLEDColor",setLEDColor);
+  Particle.function("HornSwitchWeb",HornSwitchWeb);
   Particle.publish("DriveControl:","Remote");
   strip.begin();
+
+  RGBValues[0] = 255;
+  RGBValues[1] = 255;
+  RGBValues[2] = 255;
+  RGBValues[3] = 100;
 }
 
-void onlineControl(){
-  //read the input from the cloud and set the output pins accordingly
-  //if the input is high, set the output pin high
-  //if the input is low, set the output pin low
-  //Have the code be exponential, meaning inside of adding 1 to the data times it by a certain number, same for direction then send the data
-  //to the photon but each time 
-  /*While(one of the buttons is press){
-    detected which key is pressed and have it be exponential each time while sending the data to the photon.
-    sendData(x,y);
-    x*=2; y*=2; once a button is released like a or d have the value be zero. same for w and s
-  }
-  */
-}
 
+
+unsigned long PosTimer = millis() + 500;
 void loop() {
   // onlineControl();
   if(driveControl == 0){
-    //remote control
-    //read the input from the remote and set the output pins accordingly
-    //if the input is high, set the output pin high
-    //if the input is low, set the output pin low
+    if(millis() > PosTimer){
+       //Stop
+  int driveDirection = 0;
+  driveValue[0] = driveValue[0] * maxPower / 255;
+  driveValue[1] = driveValue[1] * maxPower / 255;
+if(driveValue[0] == 0 && driveValue[1] == 0){
+  driveDirection = 100;
+   digitalWrite(backwardPin, HIGH);
+    digitalWrite(forwardPin, HIGH);
+}
+else if(driveValue[1] >= 0){
+  digitalWrite(backwardPin, LOW);
+  digitalWrite(forwardPin, HIGH);
+  if ( driveValue[0] == 0 || driveValue[0] > 0){
+    driveDirection = 0;
   }
+  else if(driveValue[0] < 0){
+    // Right 
+    driveDirection = 3;
+  } else if(driveValue[0] > 0){
+    // Left
+   driveDirection = 2;
+  }
+} else if(driveValue[1] < 0){
+  digitalWrite(backwardPin, HIGH);
+  digitalWrite(forwardPin, LOW);
+  if (driveValue[0] ==0  || driveValue[0] < 0){
+    // Backward
+    driveDirection = 0;
+  }
+  else if(driveValue[0] <= 0){
+    // Right
+   driveDirection = 3;
+  } else if(driveValue[0] > 0){
+    driveDirection = 2;
+  }
+}
+Serial.println(driveDirection);
+switch(driveDirection){
+  case 0:
+  //forward
+  analogWrite(Motors[0].pins.powerPin, abs(driveValue[1]));
+  analogWrite(Motors[1].pins.powerPin, abs(driveValue[1]));
+  break;
+  case 2:
+  //left
+  analogWrite(Motors[0].pins.powerPin, abs(driveValue[1]));
+  analogWrite(Motors[1].pins.powerPin, abs(driveValue[0]));
+  break;
+  case 3:
+  //right
+  analogWrite(Motors[0].pins.powerPin, abs(driveValue[0]));
+  analogWrite(Motors[1].pins.powerPin, abs(driveValue[1]));
+  break;
+  default:
+  analogWrite(Motors[0].pins.powerPin, 0);
+  analogWrite(Motors[1].pins.powerPin, 0);
+  break;
+}
+      PosTimer = millis() + 500;
+    }
+      
+    }
   else if(driveControl == 1){
-    //website control
-    //read the input from the cloud and set the output pins accordingly
-    //if the input is high, set the output pin high
-    //if the input is low, set the output pin low
   }
   //The code for the player to work, it will only activiate if the somebody presses the button.
   if(speaker.tuneIsOn){
@@ -177,11 +233,22 @@ int setDriveControl(String inputString){
   return -1;
 }
 void setDriveControlXY(const char *event, const char *data){
-  String inputString = String(data);
-  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
-  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
-  driveValue[0] = xValue;
-  driveValue[1] = yValue;
+  if(strlen(data) == 0){
+    return;
+  }else{
+  driveValue[0] = String(data).substring(0, String(data).indexOf(",")).toInt(); //get the x value
+  driveValue[1] = String(data).substring(String(data).indexOf(",")+1).toInt(); //get the y value
+  if(driveValue[0] > 255){
+    driveValue[0] = 255;
+  } else if(driveValue[0] < -255){
+    driveValue[0] = -255;
+  }
+  if(driveValue[1] > 255){
+   driveValue[1]= 255;
+  } else if(driveValue[1] < -255){
+    driveValue[1] = -255;
+  }
+}
 }
 void HornSwitch(const char *event, const char *data){
   String inputString = String(data);
@@ -194,11 +261,15 @@ void HornSwitch(const char *event, const char *data){
     speaker.thisNote = 0;
   } else if(inputString.indexOf("TUNE:") > -1){
     inputString = inputString.substring(inputString.indexOf(":")+1); // This gets the number between the interrupt pin and :
-    selectedSong = inputString.toInt();
+    selectedSong = inputString.toInt()-1;
     Particle.publish("Song(O/F):","true"); //This allows for interrupts to happen
     speaker.tuneIsOn = !speaker.tuneIsOn;
   }
 }
+int HornSwitchWeb(String inputString){
+  HornSwitch(0, inputString);
+  return 1;
+  }
 //Untested Code
 int setDriveSpeed(String inputString){
  int input = inputString.toInt();
@@ -241,4 +312,11 @@ void showColor(int brightnessValue){
   strip.setPixelColor(0,color);
   strip.setPixelColor(1,color);
   strip.show();
+}
+int setCloudDriveControlXY(String inputString){
+  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
+  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
+  driveValue[0] = xValue;
+  driveValue[1] = yValue;
+  return 0;
 }
