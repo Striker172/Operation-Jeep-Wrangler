@@ -47,6 +47,8 @@ void setDriveControlXY(const char *event, const char *data);
 int setCloudDriveControlXY(String inputString);
 //This gets the input from the horn switch and sets the speaker to beep, and sets the song to play
 void HornSwitch(const char *event, const char *data);
+//This gets the input from the horn switch and sets the speaker to beep, and sets the song to play
+int setCloudHorn(String inputString);
 //This will set the drive control to either remote or website and will make a beep sound
 int setDriveControl(String inputString);
 //This will beep the speaker
@@ -94,6 +96,7 @@ void setup() {
   Particle.function("SetDriveSpeed",setDriveSpeed);
   Particle.function("SetLEDColor",setLEDColor);
   Particle.function("SetCloudDriveControl", setCloudDriveControlXY);
+  Particle.function("SetCloudHornC", setCloudHorn);
   Particle.publish("DriveControl:","Remote");
   strip.begin();
 
@@ -318,5 +321,22 @@ int setCloudDriveControlXY(String inputString){
   int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
   driveValue[0] = xValue;
   driveValue[1] = yValue;
+  return 0;
+}
+
+int setCloudHorn(String inputString){
+ if(inputString.indexOf("ON") > -1){
+    beep(1000);
+  }
+  else if(inputString.indexOf("OFF") > -1){
+    noTone(speakerPin);
+    speaker.tuneIsOn = false;
+    speaker.thisNote = 0;
+  } else if(inputString.indexOf("TUNE:") > -1){
+    inputString = inputString.substring(inputString.indexOf(":")+1); // This gets the number between the interrupt pin and :
+    selectedSong = inputString.toInt()-1;
+    Particle.publish("Song(O/F):","true"); //This allows for interrupts to happen
+    speaker.tuneIsOn = !speaker.tuneIsOn;
+  } 
   return 0;
 }
