@@ -1,6 +1,6 @@
 Operation Jeep Wrangler 
 
-Group Members (4): Ernest Blake(ernes028@umn.edu) , Thomas Goodman(goodm344@umn.edu) , Sam Fisher(fish0780@umn.edu) , Khaleed Nassam(ourob002@umn.edu)  
+Group Members (4): Ernest Blake(ernes028@umn.edu) , Thomas Goodman(goodm344@umn.edu) , Sam Fisher(fish0780@umn.edu) , Abdoul Khaleed Ouro Bang'na Nassam(ourob002@umn.edu)  
 
 Description: 
 Our IoT project comprises two separate devices that work together. The first device is a controller that is designed to control the other photon device actions remotely. 
