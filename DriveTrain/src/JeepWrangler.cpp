@@ -6,29 +6,14 @@
 #define SpeakerPin A0  
 #define PixelPin D0
 #define speakerPin D1
-#define backwardPin D2
-#define forwardPin D3
-#define RightSideMotor D4
-#define LeftSideMotor D5
+//Change the pins to the correct ones, IT REQUIRES PWM PINS
+#define RightForward D2
+#define LeftForward D3
+#define RightBackward D4
+#define LeftBackward D5
 //Variables for the ILed
 #define PIXEL_COUNT 2
 #define PIXEL_TYPE WS2812
-
-class MotorControl {
-  public:
-  struct pins {
-    String name;
-    int powerPin;
-  };
-  MotorControl(String name, int powerPin) {
-    pins.name = name;
-    pins.powerPin = powerPin;
-  }
-  struct pins pins;
-  private:
-};
-
-
 // Let Device OS manage the connection to the Particle Cloud
 SYSTEM_MODE(AUTOMATIC);
 
@@ -70,21 +55,14 @@ int selectedSong = 0; //This is the song that is selected to play
 bool previvousState = speaker.tuneIsOn;
 int RGBValues[4]; //The varibles for the RGB values and the brightness
 //Objects for the motors
-MotorControl Motors[2] = {
-  MotorControl("Left", LeftSideMotor),
-  MotorControl("Right", RightSideMotor)
-}; //Use analogWrite to output the values to the pins, and use the speedCap to limit the speed of the motors
+ //Use analogWrite to output the values to the pins, and use the speedCap to limit the speed of the motors
 
 void setup() {
-  // Put initialization like pinMode and begin functions here
-  driveValue[0] = 0;
-  driveValue[1] = 0;
-
-  Serial.begin(9600);
-  pinMode(RightSideMotor, OUTPUT);
-  pinMode(LeftSideMotor, OUTPUT);
-  pinMode(forwardPin, OUTPUT);
-  pinMode(backwardPin, OUTPUT);
+  // Put initialization like pinMode and begin functions here 
+  pinMode(RightForward, OUTPUT);
+  pinMode(LeftBackward, OUTPUT);
+  pinMode(LeftForward, OUTPUT);
+  pinMode(RightBackward, OUTPUT);
   pinMode(speakerPin, OUTPUT);
   Particle.subscribe("ControlValues(x,y):", setDriveControlXY,"2f0028001547313137363331");
   Particle.subscribe("HornSwitch:",HornSwitch,"2f0028001547313137363331");
@@ -97,84 +75,47 @@ void setup() {
   Particle.function("SetCloudDriveControl", setCloudDriveControlXY);
   Particle.function("SetCloudHornC", setCloudHorn);
   Particle.publish("DriveControl:","Remote");
-  strip.begin();
-
-  RGBValues[0] = 255;
-  RGBValues[1] = 255;
-  RGBValues[2] = 255;
+  for(int i = 0; i < 3; i++){
+    RGBValues[i] = 255;
+  }
+  driveValue[0] = 0;
+  driveValue[1] = 0;
   RGBValues[3] = 100;
+  strip.begin();
 }
 
-void Drive(){
-  int driveDirection = 0;
-  driveValue[0] = driveValue[0] * maxPower / 255;
-  driveValue[1] = driveValue[1] * maxPower / 255;
-if(driveValue[0] == 0 && driveValue[1] == 0){
-  driveDirection = 100;
-   digitalWrite(backwardPin, LOW);
-    digitalWrite(forwardPin, LOW);
-}
-else if(driveValue[1] >= 0){
-  if ( driveValue[0] == 0){
-    digitalWrite(backwardPin, HIGH);
-    digitalWrite(forwardPin, HIGH);
-  }
-  else if(driveValue[0] < 0){
-    digitalWrite(backwardPin, HIGH);
-    digitalWrite(forwardPin, LOW);
-  } else if(driveValue[0] > 0){
-    digitalWrite(backwardPin, LOW);
-    digitalWrite(forwardPin, HIGH);
-   driveDirection = 2;
-  }
-} else if(driveValue[1] < 0){
-  if (driveValue[0] ==0){
-    // Backward
-    digitalWrite(backwardPin, HIGH);
-    digitalWrite(forwardPin, HIGH);
-    driveDirection = 0;
-  }
-  else if(driveValue[0] <= 0){
-    digitalWrite(backwardPin, HIGH);
-    digitalWrite(forwardPin, LOW);
-   driveDirection = 3;
-  } else if(driveValue[0] > 0){
-    driveDirection = 2;
-    digitalWrite(backwardPin, LOW);
-    digitalWrite(forwardPin, HIGH);
-  }
-}
-// switch(driveDirection){
-//   case 0:
-//   //forward
-  
-//   analogWrite(LeftSideMotor, abs(driveValue[1]));
-//   analogWrite(RightSideMotor, abs(driveValue[1]));
-  
-//   break;
-//   case 2:
-//   //left
-//   analogWrite(Motors[0].pins.powerPin, abs(driveValue[1]));
-//   analogWrite(Motors[1].pins.powerPin,abs(driveValue[0]));
-//   break;
-//   case 3:
-//   //right
-//   analogWrite(Motors[0].pins.powerPin, abs(driveValue[0]));
-//   analogWrite(Motors[1].pins.powerPin, abs(driveValue[1]));
-//   break;
-//   default:
-//   analogWrite(Motors[0].pins.powerPin, 0);
-//   analogWrite(Motors[1].pins.powerPin, 0);
-//   break;
-// }
+void Drive(uint16_t PinR,uint16_t PinL){
+  //This may not be right for the joystick, switch the < and > if it's not working
+    if(driveValue[0] < -10){
+      analogWrite(PinL, abs(driveValue[0]));
+      if(driveValue[0] < -250* maxPower/100){
+      	analogWrite(PinR,0);
+      } else{
+      	analogWrite(PinR,driveValue[1]);
+      }
+    }
+    else if (driveValue[0] > 10){
+      analogWrite(PinR, driveValue[0]);
+       if(driveValue[0] > 250 * maxPower/100){
+      	analogWrite(PinL,0);
+      } else{
+      	analogWrite(PinL,driveValue[1]);
+      }
+    } else{
+      analogWrite(PinL,driveValue[1]);
+      analogWrite(PinR,driveValue[1]);
+    }
 }
 
 unsigned long PosTimer = millis() + 500;
 void loop() {
   // onlineControl();
     if(millis() > PosTimer){
-       Drive();
-  
+    if(driveValue[0] > 0){
+      Drive(RightForward,LeftForward);
+    } else if(driveValue[0] < 0){
+     Drive(RightBackward,LeftBackward);
+    }
       PosTimer = millis() + 500;
     }
 
@@ -215,18 +156,14 @@ int setDriveControl(String inputString){
 }
 void setDriveControlXY(const char *event, const char *data){
   String inputString = String(data);
-  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
-  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
-  driveValue[0] = xValue;
-  driveValue[1] = yValue;
+  driveValue[0] = inputString.substring(0, inputString.indexOf(",")).toInt();
+  driveValue[1] = inputString.substring(inputString.indexOf(",")+1).toInt();
 }
 
 int setCloudDriveControlXY(String inputString){
-  int xValue = inputString.substring(0, inputString.indexOf(",")).toInt(); //get the x value
-  int yValue = inputString.substring(inputString.indexOf(",")+1).toInt(); //get the y value
-  driveValue[0] = xValue;
-  driveValue[1] = yValue;
-  return 0;
+  //This is for the website to control the car
+  setDriveControlXY(0, inputString);
+  return 1;
 }
 
 void HornSwitch(const char *event, const char *data){
@@ -251,7 +188,6 @@ int HornSwitchWeb(String inputString){
   HornSwitch(0, inputString);
   return 1;
   }
-//Untested Code
 int setDriveSpeed(String inputString){
  int input = inputString.toInt();
   if(input > 100 || input < 0){
